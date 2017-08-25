@@ -1,4 +1,5 @@
 
 
+accordion
 
-
+http://jsfiddle.net/spalagani/vsyaa4fj/
