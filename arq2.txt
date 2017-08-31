@@ -1,486 +1,65 @@
-using Gpa.Comercio.BusinessEntity;
-using Gpa.Comercio.Cache;
-using Gpa.Comercio.Common;
-using Microsoft.Practices.EnterpriseLibrary.Data;
-using Microsoft.Practices.EnterpriseLibrary.Data.Sql;
-using Oracle.ManagedDataAccess.Client;
-using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Data;
-using System.Data.Common;
-using System.Data.SqlClient;
-using System.Reflection;
-using System.Text;
+<div class="accordion_container">
+		<div class="accordion_head">First Accordian Head<span class="plusminus">+</span></div>
+			<div class="accordion_body" style="display: none;">
+			<p>First Accordian Body, it will have description</p>
+			</div>
+		<div class="accordion_head">Second Accordian Head<span class="plusminus">+</span></div>
+			<div class="accordion_body" style="display: none;">
+			<p>Second Accordian Body, it will have description</p>
+			</div>
+		<div class="accordion_head">Third Accordian Head<span class="plusminus">+</span></div>
+			<div class="accordion_body" style="display: none;">
+			<p>Third Accordian Body, it will have description</p>
+			</div>
+ 
+</div>
 
-namespace Gpa.Comercio.Dalc.Helper
-{
-    internal static class DataHelper
-    {
-        /// <summary>
-        /// Obtem a conexão default setada do arquivo ConnectionConfig.config
-        /// </summary>
-        /// <returns>Object de conexão já aberto</returns>
-        public static Database CreateDatabase()
-        {
-            return CreateDatabase(false);
+      .accordion_container {
+            width: 100%;
         }
 
-        public static SqlConnection CreateSqlDatabase()
-        {
-            SqlConnection conn = new SqlConnection(CreateConnection().ConnectionString);
-            if (conn.State != ConnectionState.Open)
-                conn.Open();
-            return conn;
+        .accordion_head {
+            background-color: dimgrey;
+            color: white;
+            cursor: pointer;
+            font-family: arial;
+            font-size: 1.2em;
+            margin: 0 0 1px 0;
+            padding: 7px 5px;
+            font-weight: bold;
+            text-transform: uppercase;
+            text-align: left;
         }
 
-        /// <summary>
-        /// Criado para as situações na Vitrine onde é necessário realizar acesso ao banco transacional
-        /// </summary>
-        public static Database CreateDatabase(bool transacionalVitrine)
-        {
-            return new SqlDatabase(RetornaConnectionString(ValidarConfigTransacional(transacionalVitrine)
-                        ? "DB_LOJA_TRANSACIONAL" //verdadeiro
-                        : "DB_LOJA")); //falso
+        .accordion_body {
+            background: lightgray;
         }
 
-        /// <summary>
-        /// Obtem o Command de Procedures setando o CommandTimeout
-        /// </summary>
-        public static DbCommand GetStoredProcCommand(Database dataBase, string storedProcedure)
-        {
-            DbCommand dbCommand = dataBase.GetStoredProcCommand(storedProcedure);
-            if (!string.IsNullOrEmpty(ConfigurationManager.AppSettings["SPCommandTimeout"]))
-            {
-                dbCommand.CommandTimeout = ConfigurationManager.AppSettings["SPCommandTimeout"].ToInteger();
+            .accordion_body p {
+                padding: 18px 5px;
+                margin: 0px;
             }
 
-            return dbCommand;
+        .plusminus {
+            float: right;
+            overflow: no-display;
+            padding-right: 15px;
+            font-size: 1.2em;
         }
+		
+		
+    <script type="text/javascript">
 
-        public static Database CreateDatabaseCEP()
-        {
-            return new SqlDatabase(CreateConnection().ConnectionStringCEP);
-        }
-
-        public static Database CreateDatabaseCORPB2B()
-        {
-            return new SqlDatabase(CreateConnection().ConnectionStringCORPB2B);
-        }
-
-        public static Database CreateDatabaseCORP()
-        {
-            return new SqlDatabase(CreateConnection().ConnectionStringCORP);
-        }
-
-        public static Database CreateDatabaseErro()
-        {
-            return new SqlDatabase(CreateConnection().ConnectionStringErro);
-        }
-
-        public static Database CreateDatabaseMIS()
-        {
-            return new SqlDatabase(CreateConnection().ConnectionStringMIS);
-        }
-
-        public static OracleConnection CreateDataBaseERP()
-        {
-            OracleConnection conn;
-            conn = new OracleConnection(CreateConnection().ConnectionStringERP);
-
-            if (conn.State != ConnectionState.Open)
-                conn.Open();
-
-            return conn;
-        }
-
-        public static OracleConnection CreateDataBaseHotLine()
-        {
-            OracleConnection conn = new OracleConnection(CreateConnection().ConnectionStringHotLine);
-            if (conn.State != ConnectionState.Open)
-                conn.Open();
-            return conn;
-        }
-
-        public static OracleCommand GetStoredProcCommand(this OracleConnection db, string storedProcedureName)
-        {
-            OracleCommand dbCommand = db.CreateCommand();
-            dbCommand.BindByName = true;
-            dbCommand.CommandType = CommandType.StoredProcedure;
-            dbCommand.CommandText = storedProcedureName;
-            return dbCommand;
-        }
-
-        public static void AddParameter(this OracleCommand dbCommand, string name, object value, OracleDbType dbType, ParameterDirection direction)
-        {
-            OracleParameter param = dbCommand.CreateParameter();
-            param.ParameterName = name;
-            param.OracleDbType = dbType;
-            param.Direction = direction;
-            param.Value = value;
-            dbCommand.Parameters.Add(param);
-        }
-
-        public static void AddInParameter(this OracleCommand dbCommand, string name, object value, OracleDbType dbType)
-        {
-            dbCommand.AddParameter(name, value, dbType, ParameterDirection.Input);
-        }
-
-        public static void AddOutParameter(this OracleCommand dbCommand, string name, OracleDbType dbType)
-        {
-            OracleParameter param = dbCommand.CreateParameter();
-            param.ParameterName = name;
-            param.OracleDbType = dbType;
-            param.Direction = ParameterDirection.Output;
-            dbCommand.Parameters.Add(param);
-        }
-
-        public static Database CreateDatabase(string connectionString)
-        {
-            Cache<Database> objCache = new Cache<Database>();
-            objCache.OnCacheUpdate = delegate()
-            {
-                return new SqlDatabase(connectionString);
-            };
-            return objCache.GetCache(connectionString);
-        }
-
-        public static Conexao CreateConnection()
-        {
-            return CreateConnection(false);
-        }
-
-        private static Conexao CreateConnection(bool vitrineTransacional)
-        {
-            var conexao = new Conexao
-            {
-                ConnectionString =
-                    RetornaConnectionString(ValidarConfigTransacional(vitrineTransacional)
-                        ? "DB_LOJA_TRANSACIONAL"
-                        : "DB_LOJA"),
-                ConnectionStringERP = RetornaConnectionString("DB_ERP"),
-                ConnectionStringERPOld = RetornaConnectionString("DB_ERP_OLD"),
-                ConnectionStringCEP = RetornaConnectionString("DB_CEP"),
-                ConnectionStringCORPB2B = RetornaConnectionString("DB_CORP_B2B"),
-                ConnectionStringCORP = !String.IsNullOrEmpty(RetornaConnectionString("DB_CORP")) ? RetornaConnectionString("DB_CORP") : RetornaConnectionString("DBCORP"),
-                ConnectionStringHotLine = RetornaConnectionString("DB_ERP_HOTLINE"),
-                ConnectionStringMIS = RetornaConnectionString("DB_MIS"),
-                ConnectionStringErro = ConfigurationManager.AppSettings["ConnectionStringErro"].RetornaString(),
-                ClusterNodes = ConfigurationManager.AppSettings["ClusterNodes"].RetornaString(),
-                ConnectionStringBusca = RetornaConnectionString("DB_BUSCA")
-            };
-            return conexao;
-        }
-
-        private static bool ValidarConfigTransacional(bool transacional)
-        {
-            if (transacional)
-                transacional = ConfigurationManager.ConnectionStrings["DB_LOJA_TRANSACIONAL"] != null;
-            return transacional;
-        }
-
-        public static string RetornaConnectionString(string db)
-        {
-            string connectionString = string.Empty;
-            if (ConfigurationManager.ConnectionStrings[db] != null)
-                connectionString = ConfigurationManager.ConnectionStrings[db].ToString();
-            return connectionString;
-        }
-
-        /// <summary>
-        /// Metodo responsável pelo cast dos valores da coluna do datareader 
-        /// </summary>
-        /// <typeparam name="T">Tipo esperado</typeparam>
-        /// <param name="reader">Objeto DataReader retornado do banco</param>
-        /// <param name="column">Nome da coluna do datareader solicitada</param>
-        public static T ToGenericValue<T>(IDataReader reader, string column)
-        {
-            if (reader[column] != DBNull.Value)
-            {
-                return (T)reader[column];
-            }
-            else
-                return default(T);
-        }
-
-        /// <summary>
-        /// Metodo responsável pelo cast dos valores da coluna do DataRow 
-        /// </summary>
-        /// <typeparam name="T">Tipo esperado</typeparam>
-        /// <param name="row">Objeto DataRow feito por uma consulta que alimenta um DataSet</param>
-        /// <param name="column">Nome da coluna do datareader solicitada</param>
-        public static T ToGenericValue<T>(DataRow row, string column)
-        {
-            if (row[column] != DBNull.Value)
-            {
-                return (T)row[column];
-            }
-            else
-                return default(T);
-        }
-
-        /// <summary>
-        /// Metodo responsavel por verificar se a coluna existe no datareader
-        /// </summary>
-        private static bool ColumnExists(IDataReader reader, string columnName)
-        {
-            DataTable schema = reader.GetSchemaTable();
-            foreach (DataRow r in schema.Rows)
-                if (r["ColumnName"].ToString() == columnName)
-                    return true;
-
-            return false;
-        }
-
-        /// <summary>
-        /// Metodo responsável pelo cast dos valores da coluna do datareader, verificando antes se a coluna existe
-        /// </summary>
-        /// <typeparam name="T">Tipo esperado</typeparam>
-        /// <param name="reader">Objeto DataReader retornado do banco</param>
-        /// <param name="column">Nome da coluna do datareader solicitada</param>
-        public static T ToGenericValueWithColumnExists<T>(IDataReader reader, string column)
-        {
-            if ((ColumnExists(reader, column)) && reader[column] != DBNull.Value)
-            {
-                return (T)reader[column];
-            }
-            else
-                return default(T);
-        }
-
-        public static object GetDbCommandValue(object value)
-        {
-            if (value == null)
-                return null;
-            else
-            {
-                if (value.GetType() == typeof(int))
-                {
-                    if ((int)value == 0)
-                        return null;
+        $(document).ready(function () {
+            $(".accordion_head").click(function () {
+                if ($(this).next(".accordion_body").is(':visible')) {
+                    $(this).next(".accordion_body").slideUp(300);
+                    $(this).children(".plusminus").text("+");
                 }
-                if (value.GetType() == typeof(string))
-                {
-                    if (string.IsNullOrEmpty(value.ToString()))
-                        return null;
+                else {
+                    $(this).next(".accordion_body").slideDown(300);
+                    $(this).children(".plusminus").text("-");
                 }
-            }
-
-            return value;
-        }
-
-        /// <summary>
-        /// Obtem o Número do Erro conforme o tipo da Exception
-        /// </summary>
-        public static int? ObterCodigoDeErro(DbException ex)
-        {
-            if (ex is SqlException)
-                return ((SqlException)ex).Number;
-
-            return null;
-        }
-
-        internal static Exception ObterExcecaoTratada(Exception ex)
-        {
-            if (ex is SqlException)
-            {
-                switch ((ex as SqlException).Number)
-                {
-                    case 547:
-                        {
-                            break;
-                        }
-                    default:
-                        {
-                            ex = new Exception();
-                            break;
-                        }
-                }
-            }
-
-            return ex;
-        }
-
-        /// <summary>
-        /// Seta os parametros para o comando corrente
-        /// </summary>
-        public static void SetParameters(Database dataBase, DbCommand command, ISearchOptions searchOptions)
-        {
-            Cache<PropertyInfo[]> objCache = new Cache<PropertyInfo[]>();
-
-            objCache.OnCacheUpdate = delegate()
-            {
-                return searchOptions.GetType().GetProperties();
-            };
-
-            PropertyInfo[] properties = objCache.GetCache(searchOptions.GetType().ToString());
-
-            foreach (PropertyInfo pi in properties)
-            {
-                DbParameter parameter = command.CreateParameter();
-                parameter.Direction = ParameterDirection.Input;
-                parameter.ParameterName = pi.Name;
-                parameter.Value = pi.GetValue(searchOptions, null);
-                command.Parameters.Add(parameter);
-            }
-        }
-
-        public static void SetPrimaryKeyParameters(DbCommand command, ISearchOptions searchOptions)
-        {
-            Cache<List<PropertyInfo>> objCache = new Cache<List<PropertyInfo>>();
-            objCache.OnCacheUpdate = delegate()
-            {
-                List<PropertyInfo> properties = new List<PropertyInfo>();
-                foreach (PropertyInfo pi in searchOptions.GetType().GetProperties())
-                {
-                    foreach (DataColumnAttribute o in pi.GetCustomAttributes(typeof(DataColumnAttribute), true))
-                    {
-                        if (o.IsPrimaryKey)
-                            properties.Add(pi);
-                    }
-                }
-                return properties;
-            };
-
-            List<PropertyInfo> keys = objCache.GetCache(searchOptions.GetType().ToString(), "_key");
-            foreach (PropertyInfo key in keys)
-            {
-                DbParameter parameter = command.CreateParameter();
-                parameter.Direction = ParameterDirection.Input;
-                parameter.ParameterName = key.Name;
-                parameter.Value = key.GetValue(searchOptions, null);
-                command.Parameters.Add(parameter);
-            }
-        }
-
-        public static T Map<T>(IDataReader record)
-        {
-            T entity = Activator.CreateInstance<T>();
-            Cache<PropertyInfo[]> objCache = new Cache<PropertyInfo[]>();
-
-            objCache.OnCacheUpdate = delegate()
-            {
-                return entity.GetType().GetProperties();
-            };
-
-            PropertyInfo[] properties = objCache.GetCache(entity.GetType().ToString());
-
-            DataTable tb = record.GetSchemaTable();
-
-            int posicao = -1;
-            foreach (PropertyInfo pi in properties)
-            {
-                foreach (DataRow dr in tb.Rows)
-                {
-                    if (dr["ColumnName"].ToString().ToUpper() == pi.Name.ToUpper())
-                    {
-                        if (record[pi.Name] != null)
-                        {
-                            posicao = record.GetOrdinal(pi.Name);
-                            if (posicao != -1 && !record.IsDBNull(posicao))
-                            {
-                                pi.SetValue(entity, record[pi.Name], null);
-                            }
-                        }
-                    }
-                }
-            }
-
-            return entity;
-        }
-
-        public static bool HasColumn(IDataReader reader, string columnName)
-        {
-            reader.GetSchemaTable()
-                 .DefaultView.RowFilter = "ColumnName='" + columnName + "'";
-
-            return (reader.GetSchemaTable().DefaultView.Count > 0);
-        }
-
-        /// <summary>
-        /// Busca valores pela chave primaria
-        /// </summary>
-        /// <param name="valores">valores da chave primaria para procura</param>
-        /// <param name="tabela">Tabela com os dados para procura</param>
-        public static DataRow FindInMultiPKey(object[] valores, DataTable tabela)
-        {
-            return tabela.Rows.Find(valores);
-        }
-
-        /// <summary>
-        /// Verdadeiro quando já existir registro com valores pela chave primaria
-        /// </summary>
-        /// <param name="valores">valores da chave primaria para procura</param>
-        /// <param name="tabela">Tabela com os dados para procura</param>
-        public static bool HasLine(object[] valores, DataTable tabela)
-        {
-            bool retorno = false;
-            DataRow pesquisa = tabela.Rows.Find(valores);
-            if (pesquisa != null)
-                retorno = true;
-            return retorno;
-        }
-
-        public static void CorrigeNullsOracleCommand(DbCommand command)
-        {
-            foreach (DbParameter param in command.Parameters)
-            {
-                if (param.Value == null)
-                    param.Value = DBNull.Value;
-            }
-        }
-
-        public static String LogParaOracleCommand(DbCommand dbComm)
-        {
-            StringBuilder sb = new StringBuilder();
-
-            sb.AppendLine(dbComm.CommandText);
-
-            foreach (DbParameter dbParam in dbComm.Parameters)
-            {
-                sb.Append(dbParam.ParameterName);
-                sb.Append(" (" + dbParam.DbType + ") = ");
-                if (dbParam.Value == null)
-                    sb.Append("**null**");
-                else if (dbParam.Value == DBNull.Value)
-                    sb.Append("DBNull.Value");
-                else
-                    sb.Append(dbParam.Value);
-                sb.AppendLine();
-            }
-            sb.AppendLine();
-            sb.AppendLine();
-            return sb.ToString();
-        }
-    }
-
-    /// <summary>
-    /// Estrutura de conexão para gravar em cache
-    /// </summary>
-    [Serializable]
-    internal class Conexao : ICacheable
-    {
-        internal int IdConexao { get; set; }
-        internal string ConnectionString { get; set; }
-        internal string ConnectionStringERPOld { get; set; }
-        internal string ConnectionStringERP { get; set; }
-        internal string ConnectionStringCEP { get; set; }
-        internal string ConnectionStringCORPB2B { get; set; }
-        internal string ConnectionStringCORP { get; set; }
-        internal string ConnectionStringErro { get; set; }
-        internal string ConnectionStringHotLine { get; set; }
-        internal string ConnectionStringMIS { get; set; }
-        internal string ClusterNodes { get; set; }
-
-        internal string ConnectionStringBusca { get; set; }
-
-        #region ICacheable Members
-
-        public string[] GetCacheVariationKey()
-        {
-            return new string[] { this.IdConexao.ToString() };
-        }
-
-        #endregion
-    }
-}
+            });
+        });
+    </script>		
