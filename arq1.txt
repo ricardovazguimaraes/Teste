@@ -3,3 +3,69 @@
 accordion
 
 http://jsfiddle.net/spalagani/vsyaa4fj/
+
+<div class="accordion_container">
+		<div class="accordion_head">First Accordian Head<span class="plusminus">+</span></div>
+			<div class="accordion_body" style="display: none;">
+			<p>First Accordian Body, it will have description</p>
+			</div>
+		<div class="accordion_head">Second Accordian Head<span class="plusminus">+</span></div>
+			<div class="accordion_body" style="display: none;">
+			<p>Second Accordian Body, it will have description</p>
+			</div>
+		<div class="accordion_head">Third Accordian Head<span class="plusminus">+</span></div>
+			<div class="accordion_body" style="display: none;">
+			<p>Third Accordian Body, it will have description</p>
+			</div>
+ 
+</div>
+
+      .accordion_container {
+            width: 100%;
+        }
+
+        .accordion_head {
+            background-color: dimgrey;
+            color: white;
+            cursor: pointer;
+            font-family: arial;
+            font-size: 1.2em;
+            margin: 0 0 1px 0;
+            padding: 7px 5px;
+            font-weight: bold;
+            text-transform: uppercase;
+            text-align: left;
+        }
+
+        .accordion_body {
+            background: lightgray;
+        }
+
+            .accordion_body p {
+                padding: 18px 5px;
+                margin: 0px;
+            }
+
+        .plusminus {
+            float: right;
+            overflow: no-display;
+            padding-right: 15px;
+            font-size: 1.2em;
+        }
+		
+		
+    <script type="text/javascript">
+
+        $(document).ready(function () {
+            $(".accordion_head").click(function () {
+                if ($(this).next(".accordion_body").is(':visible')) {
+                    $(this).next(".accordion_body").slideUp(300);
+                    $(this).children(".plusminus").text("+");
+                }
+                else {
+                    $(this).next(".accordion_body").slideDown(300);
+                    $(this).children(".plusminus").text("-");
+                }
+            });
+        });
+    </script>		
