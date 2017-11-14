@@ -1,0 +1,28 @@
+SELECT
+		HB.CD_CONTROLE												'NumCtrlEmis',
+		HB.CD_HEADER												'CD_HEADER',
+		HB.CD_PAGAMENTO												'NumCtrlReqPart',
+		HB.DC_NOME_ARQUIVO											'NomeArquivo',
+		@ISPB_BANCOABC												'ISPBEmissor',
+		@ISPB_CIP													'ISPBDestinatario',
+		@ISPB_BANCOABC												'ISPB_BANCOABC',
+		@ISPB_BANCOABC												'ISPBPartRecbdrPrincipal',
+		@ISPB_BANCOABC												'ISPBPartRecbdrAdmtd',
+		X.DADO.value('NumIdentcTit[1]', 'VARCHAR(20)')				'NumIdentcTit',
+		X.DADO.value('ISPBPartRecbdrBaixaOperac[1]', 'INT')			'ISPBPartRecbdrBaixaOperac',
+		X.DADO.value('TpBaixaOperac[1]', 'int') 					'TpBaixaOperac',
+		X.DADO.value('TpPessoaPort[1]', 'VARCHAR(1)')				'TpPessoaPort',
+		X.DADO.value('CNPJ_CPFPort[1]', 'VARCHAR(14)') 				'CNPJ_CPFPort',
+		X.DADO.value('VlrBaixaOperacTit[1]', 'money')				'VlrBaixaOperacTit',
+		X.DADO.value('NumCodBarrasBaixaOperac[1]', 'varchar(44)')	'NumCodBarrasBaixaOperac',
+		X.DADO.value('NumRefCadTitBaixaOperac[1]', 'varchar(20)')	'NumRefCadTitBaixaOperac',
+		CONVERT(VARCHAR(10),@DT_HOJE,120)							'DtMovto',
+		'N'															'IndrFlagFim',
+		'246'														'CodPartRecbdrBaixaOperac',
+		'3'															'CanPgto',
+		'2'															'MeioPgto',
+		'N'															'IndrOpContg'
+	FROM 
+		TB_HISTORICO_PAGAMENTO_ARQUIVO_BAIXA_CIP (NOLOCK) HB
+		INNER JOIN TB_PAGAMENTO_CLIENTE CLI (NOLOCK) ON CLI.CD_PAGAMENTO = HB.CD_PAGAMENTO
+		CROSS APPLY VL_XML_RETORNO_CIP.nodes('/ADDA110') X(DADO)
