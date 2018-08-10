@@ -1,0 +1,253 @@
+public partial class CadastroExcecao : System.Web.UI.Page
+    {
+
+        protected decimal valorTotal = 0;
+
+
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            if (!Page.IsPostBack)
+            {
+                ABCBrasil.Security.Generic.Provider security = (ABCBrasil.Security.Generic.Provider)Session[Code.Constants.SESSION_SECURITY_PROVIDER];
+                if (!security.CheckAccess("ManterCadastroExcecao"))
+                    Response.Redirect("~/AcessoNegado.aspx");
+
+                ((ABCWebTemplate.Paginas.MasterPage.Site)this.Master).Titulo = "Exceção de Transação Bancária";
+
+                chkButton.ImageUrl = "~/img/checked.gif";
+            }
+            else
+            {
+                this.LblMensagem2.Text = "";
+            }
+
+            btnBuscaClientesSumarizado();
+        }
+
+        protected void btnBuscaCliente_ServerClick(object sender, EventArgs e)
+        {
+
+            ABCModalDialogButton bt = sender as ABCModalDialogButton;
+
+            chkButton.ImageUrl = "~/img/checked.gif";
+            this.lblMensagem.Text = "";
+            this.gvDados.Visible = false;
+
+            if (bt == null)
+                return;
+
+            string[] cols = new string[]
+                {
+                    "nmCliente",
+                    "cdCliente"
+                };
+
+
+            object[] rowvalues = bt.GetParmValues(cols);
+            if (rowvalues[0] == null)
+                return;
+
+            this.txtNomeEmpresa.Text = rowvalues[0].ToString();
+            this.hdnCD_TIPO_CLIENTE.Value = rowvalues[1].ToString();
+
+            DataTable pagamento;
+            ApoioIB.Code.PagamentoExcecao _pagamentosExcecao = new PagamentoExcecao();
+            _pagamentosExcecao.CodigoTipoCliente = Convert.ToInt32(this.hdnCD_TIPO_CLIENTE.Value);
+            pagamento = ApoioIB.Code.Pagamento.ListarPagamento(_pagamentosExcecao, false);
+
+            if (pagamento == null || pagamento.Rows.Count == 0)
+            {
+                this.lblMensagem.Visible = true;
+                this.lblMensagem.Text = "Nenhum registro encontrado!";
+                this.gvDados.Visible = false;
+                return;
+            }
+
+            this.gvDados.Visible = true;
+            this.gvDados.DataSource = pagamento;
+            this.gvDados.DataBind();
+
+
+        }
+
+        protected void btnBuscaClientesSumarizado()
+        {
+
+            ApoioIB.Code.PagamentoExcecao _pagamentosExcecao = new PagamentoExcecao();
+
+            var pagamentoSumarizado = ApoioIB.Code.Pagamento.ListarPagamentoExcecaoSumarizado();
+
+            if (pagamentoSumarizado == null || pagamentoSumarizado.Rows.Count == 0)
+            {
+                this.lblMensagem.Visible = true;
+                this.lblMensagem.Text = "Nenhum registro encontrado!";
+                //this.rptSumarizado.Visible = false;
+                return;
+            }
+
+            //this.rptSumarizado.Visible = true;
+            this.rptSumarizado.DataSource = pagamentoSumarizado;
+            this.rptSumarizado.DataBind();
+        }
+
+        
+        protected void btnSalvar_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                //informações sobre o usuário logado
+                ABCBrasil.Security.Generic.Provider security = (ABCBrasil.Security.Generic.Provider)Session[Code.Constants.SESSION_SECURITY_PROVIDER];
+
+                string pagamentos = "";
+                bool Marcado = false;
+                foreach (GridViewRow item in gvDados.Rows)
+                {
+                    CheckBox check = (CheckBox)item.FindControl("chk");
+
+                    if (check.Checked)
+                    {
+                        Marcado = true;
+                        ApoioIB.Code.PagamentoExcecao _pagamentoExcecao = new PagamentoExcecao();
+                        _pagamentoExcecao.CodigoTipoCliente = Convert.ToInt32(this.hdnCD_TIPO_CLIENTE.Value);
+                        _pagamentoExcecao.CodigoPagamento = Convert.ToInt32(item.Cells[0].Text);
+                        _pagamentoExcecao.DataPagamento = Convert.ToDateTime(item.Cells[1].Text);
+                        _pagamentoExcecao.ValorPagamento = Convert.ToDouble(item.Cells[3].Text);
+                        _pagamentoExcecao.ContaDebito = item.Cells[2].Text;
+                        _pagamentoExcecao.TipoPagamento = item.Cells[5].Text;
+                        _pagamentoExcecao.UsuarioExcecao = security.UserID;
+                        _pagamentoExcecao.DataExcecao = DateTime.Now;
+
+                        ApoioIB.Code.Pagamento.ManterPagamentoExcecao(_pagamentoExcecao);
+
+                        //Executa a proc para liberar o pagamento
+                        ApoioIB.Code.Pagamento.LiberarPagamentoExcecao(_pagamentoExcecao);
+
+                        pagamentos = pagamentos + " Cod.Pagamento: " + _pagamentoExcecao.CodigoPagamento + " Valor Pagamento: " + _pagamentoExcecao.ValorPagamento;
+
+                    }
+                }
+
+                if (Marcado)
+                {
+                    this.LblMensagem2.Text = "<font size=1 color=blue>Pagamento liberado com sucesso.<br/> </font>";
+                    //Envia email para o complice notificando sobre  a exceção
+                    string emailCompliance = ABCBrasil.Data.Parametros.BuscaValor("ApoioIBEmailCompliance");
+                    Email.EnviarEmailConfirmaExcecao(emailCompliance, pagamentos, this.txtNomeEmpresa.Text, Convert.ToString(security.UserID), Convert.ToString(DateTime.Now));
+
+                    // Grava Log Corporativo
+                    LogCorporativo.GravaLog(LogCorporativo.LogCorporativoEvento.EventoCadastroDeExcecao,
+                                            LogCorporativo.LogCorporativoCategoria.Inclusao,
+                                            "Aprovação por Exceção de Transação Bancária. - "
+                                            + "Usuário = " + security.UserID + "; "
+                                            + "Data = " + DateTime.Now + "; "
+                                            + "Sistema = ApoioIB; ");
+                }
+                //carrega o grid novamente
+                DataTable pagamento;
+                ApoioIB.Code.PagamentoExcecao _pagamentosExcecao = new PagamentoExcecao();
+                _pagamentosExcecao.CodigoTipoCliente = Convert.ToInt32(this.hdnCD_TIPO_CLIENTE.Value);
+                pagamento = ApoioIB.Code.Pagamento.ListarPagamento(_pagamentosExcecao, false);
+
+                if (pagamento == null || pagamento.Rows.Count == 0)
+                {
+                    this.lblMensagem.Visible = true;
+                    this.lblMensagem.Text = "Nenhum registro encontrado!";
+                    this.gvDados.Visible = false;
+                    return;
+                }
+
+                this.gvDados.Visible = true;
+                this.gvDados.DataSource = pagamento;
+                this.gvDados.DataBind();
+
+
+
+            }
+            catch (Exception ex)
+            {
+                this.lblMensagem.Text = "<font size=1 color=red>Ocorreram erros ao confirmar os pagamentos. <br/>" + ex.Message + "</font>";
+            }
+        }
+
+
+
+        protected void gvDados_RowCommand(object sender, GridViewCommandEventArgs e)
+        {
+
+        }
+
+        protected void chkButton_Click(object sender, ImageClickEventArgs e)
+        {
+            try
+            {
+                if (this.hdnCD_TIPO_CLIENTE.Value != "0")
+                {
+                    string imageOK = string.Empty;
+                    imageOK = "~/img/checked_ok.gif";
+                    chkButton.ImageUrl = imageOK;
+
+
+                    DataTable pagamento;
+                    ApoioIB.Code.PagamentoExcecao _pagamentoExcecao = new PagamentoExcecao();
+                    _pagamentoExcecao.CodigoTipoCliente = Convert.ToInt32(this.hdnCD_TIPO_CLIENTE.Value);
+                    pagamento = ApoioIB.Code.Pagamento.ListarPagamento(_pagamentoExcecao, true);
+
+
+                    if (pagamento == null || pagamento.Rows.Count == 0)
+                    {
+                        this.lblMensagem.Visible = true;
+                        this.lblMensagem.Text = "Nenhum registro encontrado!";
+                        this.gvDados.Visible = false;
+                        return;
+                    }
+
+                    this.gvDados.Visible = true;
+                    this.gvDados.DataSource = pagamento;
+                    this.gvDados.DataBind();
+
+
+                    //envia email para a tesouraria notificando sobre a regra de contigencia aplicada
+                    string emailTesouraria = ABCBrasil.Data.Parametros.BuscaValor("ApoioIBEmailTesouraria");
+                    ABCBrasil.Security.Generic.Provider security = (ABCBrasil.Security.Generic.Provider)Session[Code.Constants.SESSION_SECURITY_PROVIDER];
+                    Email.EnviarEmailCadastroExcecao(emailTesouraria, this.txtNomeEmpresa.Text, security.UserID, Convert.ToString(DateTime.Now));
+
+
+                    // Grava Log Corporativo
+                    LogCorporativo.GravaLog(LogCorporativo.LogCorporativoEvento.EventoCadastroDeExcecao,
+                                        LogCorporativo.LogCorporativoCategoria.Inclusao,
+                                        "Horário de contingência por transação bancária. - "
+                                        + "Usuário = " + security.UserID + "; "
+                                        + "Data = " + DateTime.Now + "; "
+                                        + "Sistema = ApoioIB; ");
+                }
+                else
+                {
+                    this.lblMensagem.Text = "<font size=1 color=red>Infome o cliente para iniciar o cadastro de exceção.<br/> </font>";
+                }
+            }
+            catch (Exception ex)
+            {
+                this.lblMensagem.Text = "<font size=1 color=red>Ocorreram erros ao carregar os pagamentos. <br/>" + ex.Message + "</font>";
+            }
+
+        }
+
+        protected void SelectCheckBox_OnCheckedChanged(object sender, EventArgs e)
+        {
+        }
+
+        protected void rptSumarizado_ItemDataBound(object sender, RepeaterItemEventArgs e)
+        {
+            //if (e.Item.ItemType == ListItemType.Item || e.Item.ItemType == ListItemType.AlternatingItem)
+            //{
+            //    ((Label)e.Item.FindControl("lblCD_HEADER")).Text = "<b>***Good***</b>";
+
+            //    ((Label)e.Item.FindControl("lblDC_CONTA_DEBITO")).Text = "<b>***YES***</b>";
+            //}
+        }
+
+        protected void btnVerDetalhe_Command(object sender, CommandEventArgs e)
+        {
+            lblComando.Text = e.CommandArgument.ToString();
+        }
+    }
