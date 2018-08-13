@@ -1,0 +1,1785 @@
+﻿USE [IB2008]
+GO
+
+/****** Object:  Table [dbo].[TB_EXCECAO_PAGAMENTO]    Script Date: 13/08/2018 20:07:26 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+SET ANSI_PADDING ON
+GO
+
+CREATE TABLE [dbo].[TB_EXCECAO_PAGAMENTO](
+	[CD_EXCECAO_PAGAMENTO] [int] IDENTITY(1,1) NOT NULL,
+	[CD_TIPO_CLIENTE] [numeric](18, 0) NOT NULL,
+	[CD_PAGAMENTO] [int] NOT NULL,
+	[DT_PAGAMENTO] [datetime] NOT NULL,
+	[VL_PAGAMENTO] [money] NOT NULL,
+	[DC_CONTA_DEBITO] [varchar](15) NOT NULL,
+	[DC_TIPO_PAGAMENTO] [varchar](35) NOT NULL,
+	[DC_USUARIO_EXCECAO] [varchar](100) NOT NULL,
+	[DT_EXCECAO] [datetime] NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[CD_EXCECAO_PAGAMENTO] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+
+GO
+
+SET ANSI_PADDING OFF
+GO
+
+
+
+USE IB2008
+GO
+
+-- GMUD 10805
+
+/************************************************************************************************************************      
+* PROCEDURE: [SPR_INS_EXCECAO_PAGAMENTO]     
+* Objetivo: Procedure utilizada para gravar as exceções cadastradas
+* CRIADA POR: Talent Four      
+* Histórico:      
+* 03/04/2015 - TFCABC2 - Implementação inicial    
+
+SPR_INS_EXCECAO_PAGAMENTO_NOVO '62968,62969,62970,62971,62972,62973,62974,62975,62976,62977,62978,62979,62980,62981,62982,62983,62984,62985,62986,62987,62988,62989,62990,62991,62992,62993,62994,62995,62996,62997,62998,62999,63000,63001,63002,63003,63004,63005,63006,63007,63008,63009,63010,63011,63012,63013,63014,63015,63016,63017,63018,63019,63020,63021,63022,63023,63024,63025,63026,63027,63028,63029,63030,63031,63032,63033,63034,63035,63036,63037,63038,63039,63040,63041,63042,63043,63044,63045,63046,63047,63048,63049,63050,63051,63052,63053,63054,63055'
+							   ,'boleto'
+							   ,'RICARDOGU'
+							   ,'2018-08-13'
+
+  
+************************************************************************************************************************/      
+
+ALTER PROCEDURE dbo.SPR_INS_EXCECAO_PAGAMENTO_NOVO
+(
+	@CD_PAGAMENTOS			VARCHAR(MAX),
+	@DC_TIPO_PAGAMENTO		VARCHAR(35),
+	@DC_USUARIO_EXCECAO		VARCHAR(100),
+	@DT_EXCECAO				DATETIME 
+)
+AS
+
+BEGIN
+
+	--Declare @Ids varchar(max) = '62968,62969,62970,62971,62972,62973,62974,62975,62976,62977,62978,62979,62980,62981,62982,62983,62984,62985,62986,62987,62988,62989,62990,62991,62992,62993,62994,62995,62996,62997,62998,62999,63000,63001,63002,63003,63004,63005,63006,63007,63008,63009,63010,63011,63012,63013,63014,63015,63016,63017,63018,63019,63020,63021,63022,63023,63024,63025,63026,63027,63028,63029,63030,63031,63032,63033,63034,63035,63036,63037,63038,63039,63040,63041,63042,63043,63044,63045,63046,63047,63048,63049,63050,63051,63052,63053,63054,63055'
+	
+	DECLARE @XML XML = CAST('<i>' + REPLACE(@CD_PAGAMENTOS, ',', '</i><i>') + '</i>' AS XML)
+	
+	--SELECT cli.* 
+	--FROM
+	--	tb_pagamento_cliente cli
+	--	INNER JOIN @XML.nodes('i') x(i) 
+	--		ON  cli.CD_PAGAMENTO = x.i.value('.', 'VARCHAR(MAX)')
+	--order by cli.CD_PAGAMENTO
+
+
+	IF(@DC_TIPO_PAGAMENTO = 'BOLETO' OR @DC_TIPO_PAGAMENTO = 'TRICON')
+	BEGIN
+
+		INSERT INTO dbo.TB_EXCECAO_PAGAMENTO (CD_TIPO_CLIENTE,CD_PAGAMENTO, DT_PAGAMENTO, VL_PAGAMENTO, DC_CONTA_DEBITO, DC_TIPO_PAGAMENTO, DC_USUARIO_EXCECAO, DT_EXCECAO) 
+		SELECT 
+			CD_TIPO_CLIENTE,CD_PAGAMENTO, DT_PAGAMENTO, VL_PAGAMENTO, DC_CONTA_DEBITO, @DC_TIPO_PAGAMENTO 'DC_TIPO_PAGAMENTO', @DC_USUARIO_EXCECAO 'DC_USUARIO_EXCECAO', DATEADD(HH, 1, GETDATE()) 'DT_EXCECAO'
+		FROM
+		TB_PAGAMENTO_CLIENTE CLI
+		INNER JOIN @XML.nodes('i') x(i) ON  cli.CD_PAGAMENTO = x.i.value('.', 'VARCHAR(MAX)')
+
+	END
+
+
+	IF(@DC_TIPO_PAGAMENTO = 'TED')
+	BEGIN
+
+		INSERT INTO dbo.TB_EXCECAO_PAGAMENTO (CD_TIPO_CLIENTE,CD_PAGAMENTO, DT_PAGAMENTO, VL_PAGAMENTO, DC_CONTA_DEBITO, DC_TIPO_PAGAMENTO, DC_USUARIO_EXCECAO, DT_EXCECAO) 
+		SELECT 
+			CD_TIPO_CLIENTE,CD_PAGAMENTO, DT_PAGAMENTO, VL_PAGAMENTO, DC_CONTA_DEBITO, @DC_TIPO_PAGAMENTO 'DC_TIPO_PAGAMENTO', @DC_USUARIO_EXCECAO 'DC_USUARIO_EXCECAO', DATEADD(HH, 1, GETDATE()) 'DT_EXCECAO'
+		FROM
+		TB_PAGAMENTO_CLIENTE CLI
+		INNER JOIN @XML.nodes('i') x(i) ON  cli.CD_PAGAMENTO = x.i.value('.', 'VARCHAR(MAX)')
+
+	END
+
+	SELECT @@ROWCOUNT 'LINHA INSERIDAS'
+
+	--INSERT INTO dbo.TB_EXCECAO_PAGAMENTO (CD_TIPO_CLIENTE,CD_PAGAMENTO, DT_PAGAMENTO, VL_PAGAMENTO, DC_CONTA_DEBITO, DC_TIPO_PAGAMENTO, DC_USUARIO_EXCECAO, DT_EXCECAO) 
+	--VALUES (@CD_TIPO_CLIENTE,@CD_PAGAMENTO, @DT_PAGAMENTO, @VL_PAGAMENTO, @DC_CONTA_DEBITO, @DC_TIPO_PAGAMENTO, @DC_USUARIO_EXCECAO, @DT_EXCECAO)
+END
+
+-- DELETE FROM TB_EXCECAO_PAGAMENTO
+-- SELECT * FROM TB_EXCECAO_PAGAMENTO
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        public static void ManterPagamentoExcecaoBancaria(string tipoPagamento, string pagamentos, string usuarioExcecao)
+        {
+            SqlParameter[] param = new SqlParameter[8];
+
+            param[5] = new SqlParameter("@DC_TIPO_PAGAMENTO", SqlDbType.VarChar, 35);
+            param[5].Value = tipoPagamento;
+
+            param[6] = new SqlParameter("@DC_USUARIO_EXCECAO", SqlDbType.VarChar, 100);
+            param[6].Value = usuarioExcecao;
+
+            param[7] = new SqlParameter("@CD_PAGAMENTOS", SqlDbType.Date);
+            param[7].Value = pagamentos;
+
+            using (SqlConnection sqlCon = ABCBrasil.Data.DBConnect.OpenConnection(Constants.SYSTEM_DB))
+            {
+                SqlHelper.ExecuteNonQuery(sqlCon, CommandType.StoredProcedure, "dbo.SPR_INS_EXCECAO_PAGAMENTO", param);
+            }
+        }
+		
+		
+        protected void btnSalvar_Click(object sender, EventArgs e)
+        {
+            lblPagamentosLidos.Text = ids_pagamentos.Text;
+
+            try
+            {
+
+
+                //informações sobre o usuário logado
+                ABCBrasil.Security.Generic.Provider security = (ABCBrasil.Security.Generic.Provider)Session[Code.Constants.SESSION_SECURITY_PROVIDER];
+
+                var listaPagamentos = ids_pagamentos.Text.Split(',');
+
+
+                if (listaPagamentos.Count() < 1)
+                    throw new ArgumentNullException("Não há nenhum pagamento para consulta");
+
+                if (ID_TRANSACAO.Equals(TIPO_TRANSACAO.BOLETO.ToString()))
+                {
+                    ApoioIB.Code.Pagamento.ManterPagamentoExcecao(_pagamentoExcecao);
+                }
+
+                ApoioIB.Code.Pagamento.ManterPagamentoExcecao(_pagamentoExcecao);
+
+
+                bool Marcado = false;
+
+                foreach (string pag in listaPagamentos)
+                {
+                    //CheckBox check = (CheckBox)item.FindControl("chk");
+
+                    //Marcado = true;
+                    //PagamentoExcecao _pagamentoExcecao = new PagamentoExcecao();
+                    //_pagamentoExcecao.CodigoTipoCliente = Convert.ToInt32(this.hdnCD_TIPO_CLIENTE.Value);
+                    //_pagamentoExcecao.CodigoPagamento = Convert.ToInt32(pag.Cells[0].Text);
+                    //_pagamentoExcecao.DataPagamento = Convert.ToDateTime(pag.Cells[1].Text);
+                    //_pagamentoExcecao.ValorPagamento = Convert.ToDouble(pag.Cells[3].Text);
+                    //_pagamentoExcecao.ContaDebito = pag.Cells[2].Text;
+                    //_pagamentoExcecao.TipoPagamento = pag.Cells[5].Text;
+                    //_pagamentoExcecao.UsuarioExcecao = security.UserID;
+                    //_pagamentoExcecao.DataExcecao = DateTime.Now;
+
+                    ApoioIB.Code.Pagamento.ManterPagamentoExcecao(_pagamentoExcecao);
+
+                    //Executa a proc para liberar o pagamento
+                    ApoioIB.Code.Pagamento.LiberarPagamentoExcecao(_pagamentoExcecao);
+
+                    pagamentos = pagamentos + " Cod.Pagamento: " + _pagamentoExcecao.CodigoPagamento + " Valor Pagamento: " + _pagamentoExcecao.ValorPagamento;
+                }
+
+                if (Marcado)
+                {
+                    this.LblMensagem2.Text = "<font size=1 color=blue>Pagamento liberado com sucesso.<br/> </font>";
+                    //Envia email para o complice notificando sobre  a exceção
+                    string emailCompliance = ABCBrasil.Data.Parametros.BuscaValor("ApoioIBEmailCompliance");
+                    Email.EnviarEmailConfirmaExcecao(emailCompliance, pagamentos, this.txtNomeEmpresa.Text, Convert.ToString(security.UserID), Convert.ToString(DateTime.Now));
+
+                    // Grava Log Corporativo
+                    LogCorporativo.GravaLog(LogCorporativo.LogCorporativoEvento.EventoCadastroDeExcecao,
+                                            LogCorporativo.LogCorporativoCategoria.Inclusao,
+                                            "Aprovação por Exceção de Transação Bancária. - "
+                                            + "Usuário = " + security.UserID + "; "
+                                            + "Data = " + DateTime.Now + "; "
+                                            + "Sistema = ApoioIB; ");
+                }
+                //carrega o grid novamente
+                DataTable pagamento;
+
+                PagamentoExcecao _pagamentosExcecao = new PagamentoExcecao();
+                _pagamentosExcecao.CodigoTipoCliente = Convert.ToInt32(this.hdnCD_TIPO_CLIENTE.Value);
+                pagamento = ApoioIB.Code.Pagamento.ListarPagamento(_pagamentosExcecao, false);
+
+                if (pagamento == null || pagamento.Rows.Count == 0)
+                {
+                    this.lblMensagem.Visible = true;
+                    this.lblMensagem.Text = "Nenhum registro encontrado!";
+                    this.gvDados.Visible = false;
+                    return;
+                }
+
+                this.gvDados.Visible = true;
+                this.gvDados.DataSource = pagamento;
+                this.gvDados.DataBind();
+
+
+
+            }
+            catch (Exception ex)
+            {
+                this.lblMensagem.Text = "<font size=1 color=red>Ocorreram erros ao confirmar os pagamentos. <br/>" + ex.Message + "</font>";
+            }
+        }		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.Data;
+using ABCBrasil.Web.WebControls;
+using ApoioIB.Code;
+using ABCBrasil.Security.IB;
+
+namespace ApoioIB.Paginas
+{
+    public partial class CadastroExcecao : System.Web.UI.Page
+    {
+
+        protected decimal valorTotal = 0;
+
+
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            if (!Page.IsPostBack)
+            {
+                ABCBrasil.Security.Generic.Provider security = (ABCBrasil.Security.Generic.Provider)Session[Code.Constants.SESSION_SECURITY_PROVIDER];
+                if (!security.CheckAccess("ManterCadastroExcecao"))
+                    Response.Redirect("~/AcessoNegado.aspx");
+
+                ((ABCWebTemplate.Paginas.MasterPage.Site)this.Master).Titulo = "Exceção de Transação Bancária";
+
+                chkButton.ImageUrl = "~/img/checked.gif";
+            }
+            else
+            {
+                this.LblMensagem2.Text = "";
+            }
+
+            btnBuscaClientesSumarizado();
+        }
+
+        protected void btnBuscaCliente_ServerClick(object sender, EventArgs e)
+        {
+
+            ABCModalDialogButton bt = sender as ABCModalDialogButton;
+
+            chkButton.ImageUrl = "~/img/checked.gif";
+            this.lblMensagem.Text = "";
+            this.gvDados.Visible = false;
+
+            if (bt == null)
+                return;
+
+            string[] cols = new string[]
+                {
+                    "nmCliente",
+                    "cdCliente"
+                };
+
+
+            object[] rowvalues = bt.GetParmValues(cols);
+            if (rowvalues[0] == null)
+                return;
+
+            this.txtNomeEmpresa.Text = rowvalues[0].ToString();
+            this.hdnCD_TIPO_CLIENTE.Value = rowvalues[1].ToString();
+
+            DataTable pagamento;
+            ApoioIB.Code.PagamentoExcecao _pagamentosExcecao = new PagamentoExcecao();
+            _pagamentosExcecao.CodigoTipoCliente = Convert.ToInt32(this.hdnCD_TIPO_CLIENTE.Value);
+            pagamento = ApoioIB.Code.Pagamento.ListarPagamento(_pagamentosExcecao, false);
+
+            if (pagamento == null || pagamento.Rows.Count == 0)
+            {
+                this.lblMensagem.Visible = true;
+                this.lblMensagem.Text = "Nenhum registro encontrado!";
+                this.gvDados.Visible = false;
+                return;
+            }
+
+            this.gvDados.Visible = true;
+            this.gvDados.DataSource = pagamento;
+            this.gvDados.DataBind();
+
+
+        }
+
+        protected void btnBuscaClientesSumarizado()
+        {
+
+            ApoioIB.Code.PagamentoExcecao _pagamentosExcecao = new PagamentoExcecao();
+
+            var pagamentoSumarizado = ApoioIB.Code.Pagamento.ListarPagamentoExcecaoSumarizado();
+
+            if (pagamentoSumarizado == null || pagamentoSumarizado.Rows.Count == 0)
+            {
+                this.lblMensagem.Visible = true;
+                this.lblMensagem.Text = "Nenhum registro encontrado!";
+                //this.rptSumarizado.Visible = false;
+                return;
+            }
+
+            //this.rptSumarizado.Visible = true;
+            this.rptSumarizado.DataSource = pagamentoSumarizado;
+            this.rptSumarizado.DataBind();
+        }
+
+        
+        protected void btnSalvar_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                //informações sobre o usuário logado
+                ABCBrasil.Security.Generic.Provider security = (ABCBrasil.Security.Generic.Provider)Session[Code.Constants.SESSION_SECURITY_PROVIDER];
+
+                string pagamentos = "";
+                bool Marcado = false;
+                foreach (GridViewRow item in gvDados.Rows)
+                {
+                    CheckBox check = (CheckBox)item.FindControl("chk");
+
+                    if (check.Checked)
+                    {
+                        Marcado = true;
+                        ApoioIB.Code.PagamentoExcecao _pagamentoExcecao = new PagamentoExcecao();
+                        _pagamentoExcecao.CodigoTipoCliente = Convert.ToInt32(this.hdnCD_TIPO_CLIENTE.Value);
+                        _pagamentoExcecao.CodigoPagamento = Convert.ToInt32(item.Cells[0].Text);
+                        _pagamentoExcecao.DataPagamento = Convert.ToDateTime(item.Cells[1].Text);
+                        _pagamentoExcecao.ValorPagamento = Convert.ToDouble(item.Cells[3].Text);
+                        _pagamentoExcecao.ContaDebito = item.Cells[2].Text;
+                        _pagamentoExcecao.TipoPagamento = item.Cells[5].Text;
+                        _pagamentoExcecao.UsuarioExcecao = security.UserID;
+                        _pagamentoExcecao.DataExcecao = DateTime.Now;
+
+                        ApoioIB.Code.Pagamento.ManterPagamentoExcecao(_pagamentoExcecao);
+
+                        //Executa a proc para liberar o pagamento
+                        ApoioIB.Code.Pagamento.LiberarPagamentoExcecao(_pagamentoExcecao);
+
+                        pagamentos = pagamentos + " Cod.Pagamento: " + _pagamentoExcecao.CodigoPagamento + " Valor Pagamento: " + _pagamentoExcecao.ValorPagamento;
+
+                    }
+                }
+
+                if (Marcado)
+                {
+                    this.LblMensagem2.Text = "<font size=1 color=blue>Pagamento liberado com sucesso.<br/> </font>";
+                    //Envia email para o complice notificando sobre  a exceção
+                    string emailCompliance = ABCBrasil.Data.Parametros.BuscaValor("ApoioIBEmailCompliance");
+                    Email.EnviarEmailConfirmaExcecao(emailCompliance, pagamentos, this.txtNomeEmpresa.Text, Convert.ToString(security.UserID), Convert.ToString(DateTime.Now));
+
+                    // Grava Log Corporativo
+                    LogCorporativo.GravaLog(LogCorporativo.LogCorporativoEvento.EventoCadastroDeExcecao,
+                                            LogCorporativo.LogCorporativoCategoria.Inclusao,
+                                            "Aprovação por Exceção de Transação Bancária. - "
+                                            + "Usuário = " + security.UserID + "; "
+                                            + "Data = " + DateTime.Now + "; "
+                                            + "Sistema = ApoioIB; ");
+                }
+                //carrega o grid novamente
+                DataTable pagamento;
+                ApoioIB.Code.PagamentoExcecao _pagamentosExcecao = new PagamentoExcecao();
+                _pagamentosExcecao.CodigoTipoCliente = Convert.ToInt32(this.hdnCD_TIPO_CLIENTE.Value);
+                pagamento = ApoioIB.Code.Pagamento.ListarPagamento(_pagamentosExcecao, false);
+
+                if (pagamento == null || pagamento.Rows.Count == 0)
+                {
+                    this.lblMensagem.Visible = true;
+                    this.lblMensagem.Text = "Nenhum registro encontrado!";
+                    this.gvDados.Visible = false;
+                    return;
+                }
+
+                this.gvDados.Visible = true;
+                this.gvDados.DataSource = pagamento;
+                this.gvDados.DataBind();
+
+
+
+            }
+            catch (Exception ex)
+            {
+                this.lblMensagem.Text = "<font size=1 color=red>Ocorreram erros ao confirmar os pagamentos. <br/>" + ex.Message + "</font>";
+            }
+        }
+
+
+
+        protected void gvDados_RowCommand(object sender, GridViewCommandEventArgs e)
+        {
+
+        }
+
+        protected void chkButton_Click(object sender, ImageClickEventArgs e)
+        {
+            try
+            {
+                if (this.hdnCD_TIPO_CLIENTE.Value != "0")
+                {
+                    string imageOK = string.Empty;
+                    imageOK = "~/img/checked_ok.gif";
+                    chkButton.ImageUrl = imageOK;
+
+
+                    DataTable pagamento;
+                    ApoioIB.Code.PagamentoExcecao _pagamentoExcecao = new PagamentoExcecao();
+                    _pagamentoExcecao.CodigoTipoCliente = Convert.ToInt32(this.hdnCD_TIPO_CLIENTE.Value);
+                    pagamento = ApoioIB.Code.Pagamento.ListarPagamento(_pagamentoExcecao, true);
+
+
+                    if (pagamento == null || pagamento.Rows.Count == 0)
+                    {
+                        this.lblMensagem.Visible = true;
+                        this.lblMensagem.Text = "Nenhum registro encontrado!";
+                        this.gvDados.Visible = false;
+                        return;
+                    }
+
+                    this.gvDados.Visible = true;
+                    this.gvDados.DataSource = pagamento;
+                    this.gvDados.DataBind();
+
+
+                    //envia email para a tesouraria notificando sobre a regra de contigencia aplicada
+                    string emailTesouraria = ABCBrasil.Data.Parametros.BuscaValor("ApoioIBEmailTesouraria");
+                    ABCBrasil.Security.Generic.Provider security = (ABCBrasil.Security.Generic.Provider)Session[Code.Constants.SESSION_SECURITY_PROVIDER];
+                    Email.EnviarEmailCadastroExcecao(emailTesouraria, this.txtNomeEmpresa.Text, security.UserID, Convert.ToString(DateTime.Now));
+
+
+                    // Grava Log Corporativo
+                    LogCorporativo.GravaLog(LogCorporativo.LogCorporativoEvento.EventoCadastroDeExcecao,
+                                        LogCorporativo.LogCorporativoCategoria.Inclusao,
+                                        "Horário de contingência por transação bancária. - "
+                                        + "Usuário = " + security.UserID + "; "
+                                        + "Data = " + DateTime.Now + "; "
+                                        + "Sistema = ApoioIB; ");
+                }
+                else
+                {
+                    this.lblMensagem.Text = "<font size=1 color=red>Infome o cliente para iniciar o cadastro de exceção.<br/> </font>";
+                }
+            }
+            catch (Exception ex)
+            {
+                this.lblMensagem.Text = "<font size=1 color=red>Ocorreram erros ao carregar os pagamentos. <br/>" + ex.Message + "</font>";
+            }
+
+        }
+
+        protected void SelectCheckBox_OnCheckedChanged(object sender, EventArgs e)
+        {
+        }
+
+        protected void rptSumarizado_ItemDataBound(object sender, RepeaterItemEventArgs e)
+        {
+            //if (e.Item.ItemType == ListItemType.Item || e.Item.ItemType == ListItemType.AlternatingItem)
+            //{
+            //    ((Label)e.Item.FindControl("lblCD_HEADER")).Text = "<b>***Good***</b>";
+
+            //    ((Label)e.Item.FindControl("lblDC_CONTA_DEBITO")).Text = "<b>***YES***</b>";
+            //}
+        }
+
+        protected void btnVerDetalhe_Command(object sender, CommandEventArgs e)
+        {
+            lblComando.Text = e.CommandArgument.ToString();
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.Data;
+using ABCBrasil.Web.WebControls;
+using ApoioIB.Code;
+using ABCBrasil.Security.IB;
+using System.Text;
+using System.Data.SqlClient;
+using System.Configuration;
+using ApoioIB.Code.PagamentoExcecaoBancaria;
+
+namespace ApoioIB.Paginas
+{
+    public partial class DetalhePagamentoExcecaoTransacaoBancaria : System.Web.UI.Page
+    {
+
+        protected decimal valorTotal = 0;
+        protected int CD_LOTE = 0;
+        protected int CD_TIPO_CLIENTE = 0;
+        protected string ID_TRANSACAO = string.Empty;
+
+        PagedDataSource _pageDataSource = new PagedDataSource();
+        private Decimal _valorTotal;
+        DataSet _currentDataSource = new DataSet();
+
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            ABCBrasil.Security.Generic.Provider security = (ABCBrasil.Security.Generic.Provider)Session[Code.Constants.SESSION_SECURITY_PROVIDER];
+            if (!security.CheckAccess("ManterCadastroExcecao"))
+                Response.Redirect("~/AcessoNegado.aspx");
+
+            RecuperaParametros();
+
+            rptGrid.DataSource = null;
+
+
+            if (CD_TIPO_CLIENTE == 0 || CD_LOTE == 0 || string.IsNullOrEmpty(ID_TRANSACAO))
+            {
+                //lblComando.Text = "Parâmetros inválidos.";
+                return;
+            }
+
+
+            try
+            {
+                //btAprovar.Click += new EventHandler(btAprovar_Click);
+
+                //bt_aprovar_2.Click += new EventHandler(btAprovar_2_Click);
+
+                //btAprovar.UseSubmitBehavior = false;
+                //btAprovar.OnClientClick = "javascript: this.disabled=true; this.value=\'Aguarde...\'; ";
+
+                //btnReprovar.Click += new EventHandler(btReprovar_Click);
+
+                //btExportExcel.Click += new EventHandler(btExportExcel_Click);
+                //btExportPdf.Click += new EventHandler(btExportPdf_Click);
+
+
+                if (!Page.IsPostBack)
+                {
+                    rptGrid.DataSource = ApoioIB.Code.Pagamento.ListarPagamentosExcecaoTransacaoBancaria(CD_LOTE, CD_TIPO_CLIENTE, ID_TRANSACAO);
+                    rptGrid.DataBind();
+
+                    // PopulaGrid(true);
+
+                    //emitido.Text = DateTime.Now.ToString();
+
+                    //UserProfile profile = ABCBrasil.IB.Code.Util.GetUserProfile();
+
+                    //lblAgenciaConta.Text = "Agência: " + profile.Cliente.CodigoAgencia + " | Conta: " + profile.Cliente.NumeroConta;
+                }
+                //else
+                //{
+                //    CalculaQtdeSelecoes();
+                //}
+            }
+            catch (Exception ex)
+            {
+                throw;
+                //Context.Items[Constantes.ContextErro] = ex;
+                //Server.Transfer("~/Paginas/TrataErro.aspx");
+            }
+
+        }
+
+
+        //protected void botao_salvar_Click(object sender, EventArgs e)
+        //{
+        //    lblRegistrosVolta.Text = ids_pagamentos.Text;
+        //}
+
+
+
+        //protected void CalculaQtdeSelecoes()
+        //{
+        //    Decimal ValorSelecionado = 0;
+        //    foreach (RepeaterItem lObjDataGridItem in repeaterPagamentosParaAprovar.Items)
+        //    {
+        //        if (lObjDataGridItem.ItemType == ListItemType.Item)
+        //        {
+        //            if (((CheckBox)lObjDataGridItem.FindControl("chkSeletorR")).Checked)
+        //                ValorSelecionado += Convert.ToDecimal(((Label)lObjDataGridItem.FindControl("VL_VALOR")).Text);
+        //        }
+        //    }
+        //    lblQdteAprovacao.Text = "Total selecionado para aprovação: " + ValorSelecionado.ToString("N2");
+        //    lblQdteAprovacao.CssClass = "icon-alert alert";
+        //}
+
+        //protected void btAprovar_Click(object sender, EventArgs e)
+        //{
+        //    int codigoPagamento = 0;
+        //    string strAcao = string.Empty;
+        //    decimal valorPagamento = 0;
+        //    int codigoCliente = 0;
+        //    int retorno = 0;
+        //    DateTime dataPagamento;
+        //    string transacao;
+        //    //labelNoRows.Visible = false;
+
+        //    StringBuilder erroComprovante = new StringBuilder();
+        //    try
+        //    {
+        //        foreach (RepeaterItem lObjDataGridItem in repeaterPagamentosParaAprovar.Items)
+        //        {
+        //            if (((CheckBox)lObjDataGridItem.FindControl("chkSeletorR")).Checked)
+        //            {
+        //                codigoPagamento = int.Parse(((HiddenField)lObjDataGridItem.FindControl("CD_NUM_DOCUMENTO")).Value);
+        //                valorPagamento = Convert.ToDecimal(((Label)lObjDataGridItem.FindControl("VL_VALOR")).Text);
+        //                dataPagamento = Convert.ToDateTime(((Label)lObjDataGridItem.FindControl("DT_PAGAMENTO")).Text);
+        //                codigoCliente = int.Parse(((HiddenField)lObjDataGridItem.FindControl("CD_TIPO_CLIENTE")).Value);
+        //                transacao = (((HiddenField)lObjDataGridItem.FindControl("ID_TRANSACAO")).Value).ToString();
+
+        //                #region TRANSFERENCIAS
+        //                if ("TED".Equals(transacao))
+        //                {
+        //                    try
+        //                    {
+        //                        retorno = Code.SVC.TransferenciaSVC.AprovaTransferencia(codigoPagamento, codigoCliente, null);
+        //                    }
+        //                    catch (Exception ex)
+        //                    {
+        //                        throw;
+        //                    }
+
+        //                    if (retorno < 0)
+        //                    {
+        //                        PopulaGrid(true); //Carrega novamente o grid pois podem ocorrer casos em que nem todas as aprovações falharam
+
+        //                        switch (retorno)
+        //                        {
+        //                            case -1:
+        //                                labelNoRows.Text = "Horário encerrado para esta operação.";
+        //                                break;
+        //                            case -2:
+        //                                labelNoRows.Text = "Débito já realizado.";
+        //                                break;
+        //                            case -3:
+        //                                labelNoRows.Text = "Data da transferência errada.";
+        //                                break;
+        //                            case -1000:
+        //                                labelNoRows.Text = "Horário encerrado para esta operação.";
+        //                                break;
+        //                            case -1001:
+        //                                labelNoRows.Text = "Horário da Transação não permitido para esta data.";
+        //                                break;
+        //                            default:
+        //                                labelNoRows.Text = "Saldo insuficiente para efetuar a aprovação.";
+        //                                break;
+        //                        }
+
+        //                        labelNoRows.Text += " Em caso de dúvidas entre em contato com o Suporte Externo pelo fone (11) 3170-2446";
+
+        //                        labelNoRows.CssClass = "icon-error error";
+        //                        labelNoRows.Visible = true;
+
+        //                        return;
+        //                    }
+        //                }
+
+        //                #endregion
+
+
+        //                #region TÍTULOS-TRIBUTOS-CONCESSIONÁRIAS
+        //                if ("BOLETO".Equals(transacao) || "TRI.CON".Equals(transacao))
+        //                {
+
+        //                    //20/03/2013 : Bruno Papa : Processo já esta sendo validado pela procedure
+        //                    // NPC: 
+        //                    // - a procedure  de débito altera o status do pagamento para 22 "Aguardando retorno CIP - débito", se o valor do título estiver dentro da onda
+        //                    // - o WCF insere na fila para validar o pagamento na CIP no ESB, se validado já realiza a baixa operacional pelo ESB
+
+        //                    retorno = Code.SVC.PagamentoSVC.AprovaPagamento(codigoPagamento, valorPagamento, dataPagamento, codigoCliente);
+
+        //                    if (retorno < 0)
+        //                    {
+        //                        PopulaGrid(true); //Carrega novamente o grid pois podem ocorrer casos em que nem todas as aprovações falharam
+
+        //                        switch (retorno)
+        //                        {
+        //                            case -1:
+        //                                labelNoRows.Text = "Horário encerrado para esta operação. Em caso de dúvidas entre em contato com o Suporte Externo pelo fone (11) 3170-2446";
+        //                                break;
+        //                            case -2:
+        //                                labelNoRows.Text = "Débito já realizado. Em caso de dúvidas entre em contato com o Suporte Externo pelo fone (11) 3170-2446";
+        //                                break;
+        //                            default:
+        //                                labelNoRows.Text = "Saldo insuficiente para efetuar a aprovação. Em caso de dúvidas entre em contato com o Suporte Externo pelo fone (11) 3170-2446";
+        //                                break;
+        //                        }
+        //                        labelNoRows.CssClass = "icon-error error";
+        //                        labelNoRows.Visible = true;
+
+        //                        //NotificaErroComprovante(erroComprovante);
+        //                        return;
+        //                    }
+        //                    // NPC: a procedure retorna 1000 somente se estiver abaixo da onda
+        //                    // caso contrário, não gera o comprovante nesse momento, somente depois da validação do pagamento na CIP
+        //                    else
+        //                    {
+        //                        if (retorno == 1000)
+        //                        {
+        //                            try
+        //                            {
+        //                                //Inclui registro para geração de pagamento
+        //                                //Code.SVC.PagamentoSVC.IncluiPagamentoFilaComprovante(codigoPagamento);
+        //                            }
+        //                            catch (Exception ex)
+        //                            {
+        //                                erroComprovante.AppendFormat("Pagamento: {0}. [{1}]<br>", codigoPagamento, ex.Message);
+        //                            }
+
+        //                            string OrigemPagamento = ((Label)lObjDataGridItem.FindControl("DC_ORIGEM_PAGAMENTO")).Text;
+
+        //                            //Realiza baixa do pagamento do sistema DDA, caso Existir
+        //                            if (OrigemPagamento == "DDA")
+        //                            {
+        //                                // descomentar
+        //                                //Code.SVC.DDASVC.BaixarTitulo(codigoPagamento);
+        //                            }
+        //                        }
+        //                    }
+        //                }
+        //                #endregion
+
+
+        //                #region TÍTULOS-PAGAMENTO-LOTE
+        //                //if ("LOTE-BOLETO".Equals(transacao) || "LOTE-TRI.CON".Equals(transacao))
+        //                //{
+
+        //                //    if (((CheckBox)lObjDataGridItem.Cells[1].Controls[1]).Checked)
+        //                //    {
+
+        //                //        int codigoLote = codigoPagamento = int.Parse(((HiddenField)lObjDataGridItem.FindControl("CD_NUM_DOCUMENTO")).Value);
+        //                //        //valorPagamento = Convert.ToDecimal(lObjDataGridItem.Cells[3].Text);
+        //                //        //dataPagamento = Convert.ToDateTime(lObjDataGridItem.Cells[4].Text);
+
+        //                //        //20/03/2013 : Bruno Papa : Processo já esta sendo validado pela procedure
+        //                //        // NPC: 
+        //                //        // - a procedure  de débito altera o status do pagamento para 22 "Aguardando retorno CIP - débito", se o valor do título estiver dentro da onda
+        //                //        // - o WCF insere na fila para validar o pagamento na CIP no ESB, se validado já realiza a baixa operacional pelo ESB
+
+        //                //        retorno = ApoioIB.Code.SVC.PagamentoSVC.AprovaPagamentoEmLote(codigoLote);
+        //                //        if (retorno < 0)
+        //                //        {
+        //                //            //Carrega novamente o grid pois podem ocorrer casos em que nem todas as aprovações falharam
+        //                //            PopulaGrid(true);
+
+        //                //            labelNoRows.CssClass = "icon-error error";
+        //                //            switch (retorno)
+        //                //            {
+        //                //                case -1:
+        //                //                    labelNoRows.Text = "Horário encerrado para esta operação. Em caso de dúvidas entre em contato com o Suporte Externo pelo fone (11) 3170-2446";
+        //                //                    break;
+        //                //                case -333:
+        //                //                    labelNoRows.Text = "Aguardando demais aprovadores.";
+        //                //                    this.labelNoRows.CssClass = "icon-alert alert";
+        //                //                    break;
+        //                //                case -2:
+        //                //                    labelNoRows.Text = "Débito já realizado. Em caso de dúvidas entre em contato com o Suporte Externo pelo fone (11) 3170-2446";
+        //                //                    break;
+        //                //                default:
+        //                //                    labelNoRows.Text = "Saldo insuficiente para efetuar a aprovação. Em caso de dúvidas entre em contato com o Suporte Externo pelo fone (11) 3170-2446";
+        //                //                    break;
+        //                //            }
+        //                //            //NotificaErroComprovante(erroComprovante);
+        //                //            labelNoRows.Visible = true;
+
+        //                //            return;
+        //                //        }
+        //                //        lblQdteAprovacao.Text = string.Empty;
+        //                //        lblQdteAprovacao.CssClass = string.Empty;
+        //                //    }
+        //                //}
+        //                #endregion
+        //            }
+        //        }
+        //        //}
+
+        //        PopulaGrid(true);
+
+        //        //NotificaErroComprovante(erroComprovante);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        string erroMsg = string.Empty;
+
+        //        if (ex is System.ServiceModel.FaultException<System.ServiceModel.ExceptionDetail>)
+        //        {
+        //            System.ServiceModel.FaultException<System.ServiceModel.ExceptionDetail> ex1 = (System.ServiceModel.FaultException<System.ServiceModel.ExceptionDetail>)ex;
+        //            if (ex1.Detail.InnerException != null)
+        //            {
+        //                string erro = ex1.Detail.InnerException.Message;
+
+
+        //                string codigoErro = string.Empty;
+        //                if (erro.Contains("["))
+        //                    codigoErro = string.Format(" e informe o código: {0}.", erro.Substring(erro.IndexOf("[") + 1, erro.IndexOf("]") - (erro.IndexOf("[") + 1)));
+
+        //                PopulaGrid(true); //Carrega novamente o grid pois podem ocorrer casos em que nem todas as aprovações falharam
+
+        //                labelNoRows.Text = "Não foi possível efetuar a aprovação no momento. Entre em contato com o Suporte Externo pelo fone (11) 3170-2446" + codigoErro;
+        //                //labelNoRows.ForeColor = System.Drawing.Color.Red;
+        //                labelNoRows.CssClass = "icon-error error";
+        //                labelNoRows.Visible = true;
+
+        //                //NotificaErroComprovante(erroComprovante);
+
+        //                return;
+        //            }
+        //        }
+        //        //Context.Items[Constantes.ContextErro] = ex;
+        //        //Server.Transfer("~/Paginas/TrataErro.aspx");
+        //    }
+        //}
+
+
+        //protected void btAprovar_2_Click(object sender, EventArgs e)
+        //{
+        //    int codigoPagamento = 0;
+        //    string strAcao = string.Empty;
+        //    decimal valorPagamento = 0;
+        //    int codigoCliente = 0;
+        //    int retorno = 0;
+        //    DateTime dataPagamento;
+        //    string transacao;
+        //    labelNoRows.Visible = false;
+
+        //    StringBuilder erroComprovante = new StringBuilder();
+        //    try
+        //    {
+
+
+        //        foreach (RepeaterItem lObjDataGridItem in repeaterPagamentosParaAprovar.Items)
+        //        {
+        //            if (((CheckBox)lObjDataGridItem.FindControl("chkSeletorR")).Checked)
+        //            {
+        //                codigoPagamento = int.Parse(((HiddenField)lObjDataGridItem.FindControl("CD_NUM_DOCUMENTO")).Value);
+        //                valorPagamento = Convert.ToDecimal(((Label)lObjDataGridItem.FindControl("VL_VALOR")).Text);
+        //                dataPagamento = Convert.ToDateTime(((Label)lObjDataGridItem.FindControl("DT_PAGAMENTO")).Text);
+        //                codigoCliente = int.Parse(((HiddenField)lObjDataGridItem.FindControl("CD_TIPO_CLIENTE")).Value);
+        //                transacao = (((HiddenField)lObjDataGridItem.FindControl("ID_TRANSACAO")).Value).ToString();
+
+        //                #region TRANSFERENCIAS
+        //                if ("TED".Equals(transacao))
+        //                {
+        //                    try
+        //                    {
+        //                        retorno = Code.SVC.TransferenciaSVC.AprovaTransferencia(codigoPagamento, codigoCliente, null);
+        //                    }
+        //                    catch (Exception ex)
+        //                    {
+        //                        throw;
+        //                    }
+
+        //                    if (retorno < 0)
+        //                    {
+        //                        PopulaGrid(true); //Carrega novamente o grid pois podem ocorrer casos em que nem todas as aprovações falharam
+
+        //                        switch (retorno)
+        //                        {
+        //                            case -1:
+        //                                labelNoRows.Text = "Horário encerrado para esta operação.";
+        //                                break;
+        //                            case -2:
+        //                                labelNoRows.Text = "Débito já realizado.";
+        //                                break;
+        //                            case -3:
+        //                                labelNoRows.Text = "Data da transferência errada.";
+        //                                break;
+        //                            case -1000:
+        //                                labelNoRows.Text = "Horário encerrado para esta operação.";
+        //                                break;
+        //                            case -1001:
+        //                                labelNoRows.Text = "Horário da Transação não permitido para esta data.";
+        //                                break;
+        //                            default:
+        //                                labelNoRows.Text = "Saldo insuficiente para efetuar a aprovação.";
+        //                                break;
+        //                        }
+
+        //                        labelNoRows.Text += " Em caso de dúvidas entre em contato com o Suporte Externo pelo fone (11) 3170-2446";
+
+        //                        labelNoRows.CssClass = "icon-error error";
+        //                        labelNoRows.Visible = true;
+
+        //                        return;
+        //                    }
+        //                }
+
+        //                #endregion
+
+
+        //                #region TÍTULOS-TRIBUTOS-CONCESSIONÁRIAS
+        //                if ("BOLETO".Equals(transacao) || "TRI.CON".Equals(transacao))
+        //                {
+
+        //                    //20/03/2013 : Bruno Papa : Processo já esta sendo validado pela procedure
+        //                    // NPC: 
+        //                    // - a procedure  de débito altera o status do pagamento para 22 "Aguardando retorno CIP - débito", se o valor do título estiver dentro da onda
+        //                    // - o WCF insere na fila para validar o pagamento na CIP no ESB, se validado já realiza a baixa operacional pelo ESB
+
+        //                    retorno = Code.SVC.PagamentoSVC.AprovaPagamento(codigoPagamento, valorPagamento, dataPagamento, codigoCliente);
+
+        //                    if (retorno < 0)
+        //                    {
+        //                        PopulaGrid(true); //Carrega novamente o grid pois podem ocorrer casos em que nem todas as aprovações falharam
+
+        //                        switch (retorno)
+        //                        {
+        //                            case -1:
+        //                                labelNoRows.Text = "Horário encerrado para esta operação. Em caso de dúvidas entre em contato com o Suporte Externo pelo fone (11) 3170-2446";
+        //                                break;
+        //                            case -2:
+        //                                labelNoRows.Text = "Débito já realizado. Em caso de dúvidas entre em contato com o Suporte Externo pelo fone (11) 3170-2446";
+        //                                break;
+        //                            default:
+        //                                labelNoRows.Text = "Saldo insuficiente para efetuar a aprovação. Em caso de dúvidas entre em contato com o Suporte Externo pelo fone (11) 3170-2446";
+        //                                break;
+        //                        }
+        //                        labelNoRows.CssClass = "icon-error error";
+        //                        labelNoRows.Visible = true;
+
+        //                        //NotificaErroComprovante(erroComprovante);
+        //                        return;
+        //                    }
+        //                    // NPC: a procedure retorna 1000 somente se estiver abaixo da onda
+        //                    // caso contrário, não gera o comprovante nesse momento, somente depois da validação do pagamento na CIP
+        //                    else
+        //                    {
+        //                        if (retorno == 1000)
+        //                        {
+        //                            try
+        //                            {
+        //                                //Inclui registro para geração de pagamento
+        //                                //Code.SVC.PagamentoSVC.IncluiPagamentoFilaComprovante(codigoPagamento);
+        //                            }
+        //                            catch (Exception ex)
+        //                            {
+        //                                erroComprovante.AppendFormat("Pagamento: {0}. [{1}]<br>", codigoPagamento, ex.Message);
+        //                            }
+
+        //                            string OrigemPagamento = ((Label)lObjDataGridItem.FindControl("DC_ORIGEM_PAGAMENTO")).Text;
+
+        //                            //Realiza baixa do pagamento do sistema DDA, caso Existir
+        //                            if (OrigemPagamento == "DDA")
+        //                            {
+        //                                // descomentar
+        //                                //Code.SVC.DDASVC.BaixarTitulo(codigoPagamento);
+        //                            }
+        //                        }
+        //                    }
+        //                }
+        //                #endregion
+
+
+        //                #region TÍTULOS-PAGAMENTO-LOTE
+        //                //if ("LOTE-BOLETO".Equals(transacao) || "LOTE-TRI.CON".Equals(transacao))
+        //                //{
+
+        //                //    if (((CheckBox)lObjDataGridItem.Cells[1].Controls[1]).Checked)
+        //                //    {
+
+        //                //        int codigoLote = codigoPagamento = int.Parse(((HiddenField)lObjDataGridItem.FindControl("CD_NUM_DOCUMENTO")).Value);
+        //                //        //valorPagamento = Convert.ToDecimal(lObjDataGridItem.Cells[3].Text);
+        //                //        //dataPagamento = Convert.ToDateTime(lObjDataGridItem.Cells[4].Text);
+
+        //                //        //20/03/2013 : Bruno Papa : Processo já esta sendo validado pela procedure
+        //                //        // NPC: 
+        //                //        // - a procedure  de débito altera o status do pagamento para 22 "Aguardando retorno CIP - débito", se o valor do título estiver dentro da onda
+        //                //        // - o WCF insere na fila para validar o pagamento na CIP no ESB, se validado já realiza a baixa operacional pelo ESB
+
+        //                //        retorno = ApoioIB.Code.SVC.PagamentoSVC.AprovaPagamentoEmLote(codigoLote);
+        //                //        if (retorno < 0)
+        //                //        {
+        //                //            //Carrega novamente o grid pois podem ocorrer casos em que nem todas as aprovações falharam
+        //                //            PopulaGrid(true);
+
+        //                //            labelNoRows.CssClass = "icon-error error";
+        //                //            switch (retorno)
+        //                //            {
+        //                //                case -1:
+        //                //                    labelNoRows.Text = "Horário encerrado para esta operação. Em caso de dúvidas entre em contato com o Suporte Externo pelo fone (11) 3170-2446";
+        //                //                    break;
+        //                //                case -333:
+        //                //                    labelNoRows.Text = "Aguardando demais aprovadores.";
+        //                //                    this.labelNoRows.CssClass = "icon-alert alert";
+        //                //                    break;
+        //                //                case -2:
+        //                //                    labelNoRows.Text = "Débito já realizado. Em caso de dúvidas entre em contato com o Suporte Externo pelo fone (11) 3170-2446";
+        //                //                    break;
+        //                //                default:
+        //                //                    labelNoRows.Text = "Saldo insuficiente para efetuar a aprovação. Em caso de dúvidas entre em contato com o Suporte Externo pelo fone (11) 3170-2446";
+        //                //                    break;
+        //                //            }
+        //                //            //NotificaErroComprovante(erroComprovante);
+        //                //            labelNoRows.Visible = true;
+
+        //                //            return;
+        //                //        }
+        //                //        lblQdteAprovacao.Text = string.Empty;
+        //                //        lblQdteAprovacao.CssClass = string.Empty;
+        //                //    }
+        //                //}
+        //                #endregion
+        //            }
+        //        }
+        //        //}
+
+        //        PopulaGrid(true);
+
+        //        //NotificaErroComprovante(erroComprovante);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        string erroMsg = string.Empty;
+
+        //        if (ex is System.ServiceModel.FaultException<System.ServiceModel.ExceptionDetail>)
+        //        {
+        //            System.ServiceModel.FaultException<System.ServiceModel.ExceptionDetail> ex1 = (System.ServiceModel.FaultException<System.ServiceModel.ExceptionDetail>)ex;
+        //            if (ex1.Detail.InnerException != null)
+        //            {
+        //                string erro = ex1.Detail.InnerException.Message;
+
+
+        //                string codigoErro = string.Empty;
+        //                if (erro.Contains("["))
+        //                    codigoErro = string.Format(" e informe o código: {0}.", erro.Substring(erro.IndexOf("[") + 1, erro.IndexOf("]") - (erro.IndexOf("[") + 1)));
+
+        //                PopulaGrid(true); //Carrega novamente o grid pois podem ocorrer casos em que nem todas as aprovações falharam
+
+        //                labelNoRows.Text = "Não foi possível efetuar a aprovação no momento. Entre em contato com o Suporte Externo pelo fone (11) 3170-2446" + codigoErro;
+        //                //labelNoRows.ForeColor = System.Drawing.Color.Red;
+        //                labelNoRows.CssClass = "icon-error error";
+        //                labelNoRows.Visible = true;
+
+        //                //NotificaErroComprovante(erroComprovante);
+
+        //                return;
+        //            }
+        //        }
+        //        //Context.Items[Constantes.ContextErro] = ex;
+        //        //Server.Transfer("~/Paginas/TrataErro.aspx");
+        //    }
+        //}
+
+
+        private void RecuperaParametros()
+        {
+            if (!string.IsNullOrEmpty(Request.QueryString["lote"].Trim()))
+                CD_LOTE = Convert.ToInt32(Request.QueryString["lote"]);
+
+            if (!string.IsNullOrEmpty(Request.QueryString["cliente"].Trim()))
+                CD_TIPO_CLIENTE = Convert.ToInt32(Request.QueryString["cliente"]);
+
+            if (!string.IsNullOrEmpty(Request.QueryString["transacao"].Trim()))
+                ID_TRANSACAO = Request.QueryString["transacao"].ToString();
+
+            //lblComando.Text = CD_LOTE.ToString() + " - " + CD_TIPO_CLIENTE.ToString() + " - " + ID_TRANSACAO.ToString() + " - ";
+        }
+
+        protected void ListaPagamentosExcecaoTransacaoBancaria()
+        {
+
+            ApoioIB.Code.PagamentoExcecao _pagamentosExcecao = new PagamentoExcecao();
+            var listaPagamentos = ApoioIB.Code.Pagamento.ListarPagamentosExcecaoTransacaoBancaria(CD_LOTE, CD_TIPO_CLIENTE, ID_TRANSACAO);
+
+            //this.rptSumarizado.Visible = true;
+            //this.rptPagamentos.DataSource = listaPagamentos;
+            //this.rptPagamentos.DataBind();
+        }
+
+
+        //protected void PopulaGrid(bool resetPaging)
+        //{
+
+        //    ApoioIB.Code.PagamentoExcecao _pagamentosExcecao = new PagamentoExcecao();
+
+        //    _currentDataSource = ApoioIB.Code.Pagamento.ListarPagamentosExcecaoTransacaoBancaria(CD_LOTE, CD_TIPO_CLIENTE, ID_TRANSACAO);
+
+        //    if (resetPaging)
+        //        this.CurrentPage = 0;
+
+        //    _valorTotal = 0;
+
+        //    if (_currentDataSource.Tables[0].Rows.Count == 0)
+        //    {
+        //        btAprovar.Visible = btnReprovar.Visible = false;
+        //        labelNoRows.Text = "Não existem pagamentos para aprovação.";
+        //        labelNoRows.CssClass = "icon-alert alert";
+        //        labelNoRows.Visible = true;
+
+        //        repeaterPagamentosParaAprovar.Visible = false;
+        //    }
+        //    else
+        //    {
+        //        foreach (DataRow r in _currentDataSource.Tables[0].Rows)
+        //            _valorTotal += Decimal.Parse(r["VL_VALOR"].ToString());
+
+        //        btAprovar.Visible = btnReprovar.Visible = true;
+        //        labelNoRows.Text = "";
+        //        labelNoRows.Visible = false;
+
+
+        //        _pageDataSource.DataSource = _currentDataSource.Tables[0].DefaultView;
+        //        _pageDataSource.AllowPaging = true;
+        //        _pageDataSource.PageSize = 20;
+        //        _pageDataSource.CurrentPageIndex = CurrentPage;
+        //        ViewState["TotalPages"] = _pageDataSource.PageCount;
+
+        //        this.lblPageInfo.Text = "Página " + (CurrentPage + 1) + " de " + _pageDataSource.PageCount;
+        //        this.lbtnPrevious.Enabled = !_pageDataSource.IsFirstPage;
+        //        this.lbtnNext.Enabled = !_pageDataSource.IsLastPage;
+        //        this.lbtnFirst.Enabled = !_pageDataSource.IsFirstPage;
+        //        this.lbtnLast.Enabled = !_pageDataSource.IsLastPage;
+
+        //        this.repeaterPagamentosParaAprovar.DataSource = _pageDataSource;
+        //        this.repeaterPagamentosParaAprovar.DataBind();
+
+        //        //if (resetPaging)
+        //        //{
+        //        //    //seta o datasource da tabela de export para o resultado total sem paginação.
+        //        //    this.repeaterExport.DataSource = _currentDataSource.Tables[0].DefaultView;
+        //        //    this.repeaterExport.DataBind();
+        //        //}
+
+        //        this.doPaging();
+        //    }
+        //}
+
+        protected void Pagamentosparaaprovar_ItemDataBound(object sender, RepeaterItemEventArgs e)
+        {
+            //if (e.Item.ItemType == ListItemType.Item || e.Item.ItemType == ListItemType.AlternatingItem)
+            if (e.Item.ItemType == ListItemType.Item)
+            {
+                HiddenField cdusuario = (HiddenField)e.Item.FindControl("CD_USUARIO");
+
+                //if (SecurityToken.UserID.Equals(cdusuario.Value)) //Usuário solicitante é o aprovador
+                //{
+                //    CheckBox chkSeletorR = (CheckBox)e.Item.FindControl("chkSeletorR");
+                //    Label lblWarningAprov = (Label)e.Item.FindControl("lblWarningAprov");
+                //    chkSeletorR.Enabled = false;
+                //    lblWarningAprov.Visible = true;
+                //    LinkButton lbtCancelarTransacao = (LinkButton)e.Item.FindControl("lbtCancelarTransacaoR");
+                //    lbtCancelarTransacao.Visible = true;
+
+                //    tblMessageAprov.Visible = true;
+                //}
+                //else
+                //{
+                //    HiddenField jaaprovou = (HiddenField)e.Item.FindControl("JAAPROVOU");
+                //    if (jaaprovou.Value == "1")
+                //    {
+                //        CheckBox chkSeletorR = (CheckBox)e.Item.FindControl("chkSeletorR");
+                //        Label lblWarningAprov = (Label)e.Item.FindControl("lblWarningAprov");
+                //        chkSeletorR.Enabled = false;
+                //        lblWarningAprov.Visible = true;
+                //        tblMessageAprov.Visible = true;
+                //    }
+                //}
+            }
+            else if (e.Item.ItemType == ListItemType.Footer)
+            {
+                Label lblTotalValor = (Label)e.Item.FindControl("labelTotalValor");
+
+                lblTotalValor.Text = _valorTotal.ToString("N2");
+            }
+        }
+
+        protected void ExportPagamentosparaaprovar_ItemDataBound(object sender, RepeaterItemEventArgs e)
+        {
+            if (e.Item.ItemType == ListItemType.Footer)
+            {
+                Label lblTotalValorExport = (Label)e.Item.FindControl("labelTotalValorExport");
+
+                lblTotalValorExport.Text = _valorTotal.ToString("N2");
+            }
+        }
+
+        protected void dlPaging_ItemDataBound(object sender, DataListItemEventArgs e)
+        {
+            LinkButton lnkbtnPage = (LinkButton)e.Item.FindControl("lnkbtnPaging");
+            if (lnkbtnPage.CommandArgument.ToString() == CurrentPage.ToString())
+            {
+                lnkbtnPage.Enabled = false;
+                //lnkbtnPage.Style.Add("fone-size", "14px");
+                lnkbtnPage.Font.Bold = true;
+
+            }
+        }
+
+        //protected void dlPaging_ItemCommand(object source, DataListCommandEventArgs e)
+        //{
+        //    if (e.CommandName.Equals("Paging"))
+        //    {
+        //        CurrentPage = Convert.ToInt16(e.CommandArgument.ToString());
+        //        this.PopulaGrid(false);
+        //    }
+        //}
+
+        //protected void lbtnNext_Click(object sender, EventArgs e)
+        //{
+        //    CurrentPage += 1;
+        //    this.PopulaGrid(false);
+
+        //}
+
+        //protected void lbtnPrevious_Click(object sender, EventArgs e)
+        //{
+        //    CurrentPage -= 1;
+        //    this.PopulaGrid(false);
+
+        //}
+        //protected void lbtnLast_Click(object sender, EventArgs e)
+        //{
+        //    CurrentPage = (Convert.ToInt32(ViewState["TotalPages"]) - 1);
+        //    this.PopulaGrid(false);
+
+        //}
+
+        //protected void lbtnFirst_Click(object sender, EventArgs e)
+        //{
+        //    CurrentPage = 0;
+        //    this.PopulaGrid(false);
+        //}
+
+        //private void doPaging()
+        //{
+        //    DataTable dt = new DataTable();
+        //    dt.Columns.Add("PageIndex");
+        //    dt.Columns.Add("PageText");
+
+        //    fistIndex = CurrentPage - 5;
+
+        //    if (CurrentPage > 5)
+        //    {
+        //        lastIndex = CurrentPage + 5;
+        //    }
+        //    else
+        //    {
+        //        lastIndex = 10;
+        //    }
+        //    if (lastIndex > Convert.ToInt32(ViewState["TotalPages"]))
+        //    {
+        //        lastIndex = Convert.ToInt32(ViewState["TotalPages"]);
+        //        fistIndex = lastIndex - 10;
+        //    }
+
+        //    if (fistIndex < 0)
+        //    {
+        //        fistIndex = 0;
+        //    }
+
+        //    for (int i = fistIndex; i < lastIndex; i++)
+        //    {
+        //        DataRow dr = dt.NewRow();
+        //        dr[0] = i;
+        //        dr[1] = i + 1;
+        //        dt.Rows.Add(dr);
+        //    }
+
+        //    this.dlPaging.DataSource = dt;
+        //    this.dlPaging.DataBind();
+        //}
+
+        #region Paging Properties
+        private int CurrentPage
+        {
+            get
+            {
+                object objPage = ViewState["_CurrentPage"];
+                int _CurrentPage = 0;
+                if (objPage == null)
+                {
+                    _CurrentPage = 0;
+                }
+                else
+                {
+                    _CurrentPage = (int)objPage;
+                }
+                return _CurrentPage;
+            }
+            set { ViewState["_CurrentPage"] = value; }
+        }
+
+        private int fistIndex
+        {
+            get
+            {
+                int _FirstIndex = 0;
+
+                if (ViewState["_FirstIndex"] == null)
+                {
+                    _FirstIndex = 0;
+                }
+                else
+                {
+                    _FirstIndex = Convert.ToInt32(ViewState["_FirstIndex"]);
+                }
+
+                return _FirstIndex;
+            }
+            set { ViewState["_FirstIndex"] = value; }
+        }
+
+        private int lastIndex
+        {
+            get
+            {
+                int _LastIndex = 0;
+
+                if (ViewState["_LastIndex"] == null)
+                {
+                    _LastIndex = 0;
+                }
+                else
+                {
+                    _LastIndex = Convert.ToInt32(ViewState["_LastIndex"]);
+                }
+
+                return _LastIndex;
+            }
+            set { ViewState["_LastIndex"] = value; }
+        }
+        #endregion
+
+        protected void btnSalvar_Click(object sender, EventArgs e)
+        {
+            lblPagamentosLidos.Text = ids_pagamentos.Text;
+
+            try
+            {
+
+
+                //informações sobre o usuário logado
+                ABCBrasil.Security.Generic.Provider security = (ABCBrasil.Security.Generic.Provider)Session[Code.Constants.SESSION_SECURITY_PROVIDER];
+
+                var listaPagamentos = ids_pagamentos.Text.Split(',');
+
+
+                if (listaPagamentos.Count() < 1)
+                    throw new ArgumentNullException("Não há nenhum pagamento para consulta");
+
+                if (ID_TRANSACAO.Equals(TIPO_TRANSACAO.BOLETO.ToString()))
+                {
+                    ApoioIB.Code.Pagamento.ManterPagamentoExcecao(_pagamentoExcecao);
+                }
+
+                ApoioIB.Code.Pagamento.ManterPagamentoExcecao(_pagamentoExcecao);
+
+
+                bool Marcado = false;
+
+                foreach (string pag in listaPagamentos)
+                {
+                    //CheckBox check = (CheckBox)item.FindControl("chk");
+
+                    //Marcado = true;
+                    //PagamentoExcecao _pagamentoExcecao = new PagamentoExcecao();
+                    //_pagamentoExcecao.CodigoTipoCliente = Convert.ToInt32(this.hdnCD_TIPO_CLIENTE.Value);
+                    //_pagamentoExcecao.CodigoPagamento = Convert.ToInt32(pag.Cells[0].Text);
+                    //_pagamentoExcecao.DataPagamento = Convert.ToDateTime(pag.Cells[1].Text);
+                    //_pagamentoExcecao.ValorPagamento = Convert.ToDouble(pag.Cells[3].Text);
+                    //_pagamentoExcecao.ContaDebito = pag.Cells[2].Text;
+                    //_pagamentoExcecao.TipoPagamento = pag.Cells[5].Text;
+                    //_pagamentoExcecao.UsuarioExcecao = security.UserID;
+                    //_pagamentoExcecao.DataExcecao = DateTime.Now;
+
+                    ApoioIB.Code.Pagamento.ManterPagamentoExcecao(_pagamentoExcecao);
+
+                    //Executa a proc para liberar o pagamento
+                    ApoioIB.Code.Pagamento.LiberarPagamentoExcecao(_pagamentoExcecao);
+
+                    pagamentos = pagamentos + " Cod.Pagamento: " + _pagamentoExcecao.CodigoPagamento + " Valor Pagamento: " + _pagamentoExcecao.ValorPagamento;
+                }
+
+                if (Marcado)
+                {
+                    this.LblMensagem2.Text = "<font size=1 color=blue>Pagamento liberado com sucesso.<br/> </font>";
+                    //Envia email para o complice notificando sobre  a exceção
+                    string emailCompliance = ABCBrasil.Data.Parametros.BuscaValor("ApoioIBEmailCompliance");
+                    Email.EnviarEmailConfirmaExcecao(emailCompliance, pagamentos, this.txtNomeEmpresa.Text, Convert.ToString(security.UserID), Convert.ToString(DateTime.Now));
+
+                    // Grava Log Corporativo
+                    LogCorporativo.GravaLog(LogCorporativo.LogCorporativoEvento.EventoCadastroDeExcecao,
+                                            LogCorporativo.LogCorporativoCategoria.Inclusao,
+                                            "Aprovação por Exceção de Transação Bancária. - "
+                                            + "Usuário = " + security.UserID + "; "
+                                            + "Data = " + DateTime.Now + "; "
+                                            + "Sistema = ApoioIB; ");
+                }
+                //carrega o grid novamente
+                DataTable pagamento;
+
+                PagamentoExcecao _pagamentosExcecao = new PagamentoExcecao();
+                _pagamentosExcecao.CodigoTipoCliente = Convert.ToInt32(this.hdnCD_TIPO_CLIENTE.Value);
+                pagamento = ApoioIB.Code.Pagamento.ListarPagamento(_pagamentosExcecao, false);
+
+                if (pagamento == null || pagamento.Rows.Count == 0)
+                {
+                    this.lblMensagem.Visible = true;
+                    this.lblMensagem.Text = "Nenhum registro encontrado!";
+                    this.gvDados.Visible = false;
+                    return;
+                }
+
+                this.gvDados.Visible = true;
+                this.gvDados.DataSource = pagamento;
+                this.gvDados.DataBind();
+
+
+
+            }
+            catch (Exception ex)
+            {
+                this.lblMensagem.Text = "<font size=1 color=red>Ocorreram erros ao confirmar os pagamentos. <br/>" + ex.Message + "</font>";
+            }
+        }
+
+    }
+
+
+    public enum TIPO_TRANSACAO
+    {
+        BOLETO,
+        TED,
+        PAGTO_LOTE,
+        TRICON
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+<%@ Page Language="C#" MasterPageFile="~/ABCWebTemplate/Paginas/MasterPage/Site.Master" AutoEventWireup="true" CodeBehind="DetalhePagamentoExcecaoTransacaoBancaria.aspx.cs" Inherits="ApoioIB.Paginas.DetalhePagamentoExcecaoTransacaoBancaria" Title="..:: ApoioIB ::.." %>
+
+<%@ Register Assembly="ABCBrasil.Web.WebControls" Namespace="ABCBrasil.Web.WebControls" TagPrefix="cc1" %>
+<asp:Content ID="Content1" ContentPlaceHolderID="cphPrincipal" runat="server">
+
+    <asp:ScriptManager ID="ScriptManager1" runat="server"></asp:ScriptManager>
+
+
+    <style>
+        .textoCorpo10 {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 10px;
+        }
+
+        .style1 {
+            FONT-SIZE: 12px;
+            COLOR: #000000;
+            font-family: Arial, Helvetica, sans-serif;
+            TEXT-DECORATION: none;
+            width: 90%;
+        }
+
+        .style2 {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 10px;
+            TEXT-DECORATION: none;
+            width: 192px;
+            text-align: right;
+        }
+
+        .css-center-col {
+            text-align: center;
+        }
+
+        .css-left-col {
+            text-align: left;
+        }
+
+        .css-right-col {
+            text-align: right;
+        }
+    </style>
+
+    <script type="text/javascript" src="../js/DataTable/jquery.min.js"></script>
+    <script type="text/javascript" src="../js/DataTable/datatables.min.js"></script>
+    <script type="text/javascript" src="../js/DataTable/dataTables.checkboxes.js"></script>
+    <script type="text/javascript" src="../js/DataTable/dataTables.checkboxes.min.js"></script>
+
+    <link type="text/css" href="../css/DataTable/dataTables.checkboxes.css" rel="stylesheet" />
+    <link type="text/css" href="../css/DataTable/datatables.min.css" rel="stylesheet" />
+
+    <div>
+        <table id="tbl-pagamentos" class="display" cellspacing="0" width="100%">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Codigo pagamento</th>
+                    <th>Código cliente</th>
+                    <th>Nome Cliente</th>
+                    <th>Valor pagamento</th>
+                    <th>Conta débito</th>
+                    <th>Origem</th>
+                </tr>
+            </thead>
+            <tbody>
+                <asp:Repeater runat="server" ID="rptGrid" EnableViewState="false" ViewStateMode="Disabled">
+                    <ItemTemplate>
+                        <tr>
+                            <td>
+                                <%# Eval("CD_NUM_DOCUMENTO") %>
+                            </td>
+                            <td>
+                                <asp:Label ID="CD_NUM_DOCUMENTO" runat="server" Text=' <%# Eval("CD_NUM_DOCUMENTO") %>'></asp:Label>
+                            </td>
+                            <td>
+                                <asp:Label ID="CD_TIPO_CLIENTE" runat="server" Text=' <%# Eval("CD_TIPO_CLIENTE") %>'></asp:Label>
+                            </td>
+                            <td>
+                                <asp:Label ID="NM_NOME" runat="server" Text='<%# Eval("NM_NOME")%>'></asp:Label>
+                            </td>
+                            <td class="css-right-col">
+                                <asp:Label ID="VL_VALOR" runat="server" Text='<%# Eval("VL_VALOR", "{0:c}")%>'></asp:Label>
+                            </td>
+                            <td>
+                                <asp:Label ID="DC_CONTA_DEBITO" runat="server" Text='<%# Eval("DC_CONTA_DEBITO")%>'></asp:Label>
+                            </td>
+                            <td>
+                                <asp:Label ID="CD_PAGAMENTO_ARQUIVO_ORIGEM" runat="server" Text='<%# Eval("CD_PAGAMENTO_ARQUIVO_ORIGEM")%>'></asp:Label>
+                            </td>
+                        </tr>
+                    </ItemTemplate>
+                </asp:Repeater>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th></th>
+                    <th>Codigo pagamento</th>
+                    <th>Código cliente</th>
+                    <th>Nome Cliente</th>
+                    <th>Valor pagamento</th>
+                    <th>Conta débito</th>
+                    <th>Origem</th>
+                </tr>
+            </tfoot>
+        </table>
+        <p>
+            <asp:TextBox runat="server" ID="ids_pagamentos" Text="vazio"></asp:TextBox>
+            <br />
+            <asp:Label runat="server" ID="lblPagamentosLidos" Text="Label vazio"></asp:Label>
+        </p>
+        <p class="form-group">
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </p>
+        <p>
+            <b>Selected rows data:</b>&nbsp;&nbsp;&nbsp;Total salary selected:
+            <asp:TextBox runat="server" ID="total" Text="0"></asp:TextBox><br>
+        </p>
+        <pre id="view-rows"></pre>
+        <p></p>
+        <p>
+            <b>Form data as submitted to the server:</b><br>
+        </p>
+        <pre id="view-form"></pre>
+        <p></p>
+    </div>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+
+
+            // Add function for summing salaries for rows that are checked
+            $.fn.dataTable.Api.register('sum()', function () {
+                var dtData = this;
+                var total = 0;
+                $.each(dtData, function (i, it) {
+                    if (it.isChecked) {
+                        var a = parseFloat(it[6].replace("$", "").replace(",", ""));
+                        total += a;
+                    }
+                });
+                $("#total").val(total);
+            });
+
+
+            var table = $('#tbl-pagamentos').DataTable({
+                //'ajax': 'https://api.myjson.com/bins/1us28',
+                'columnDefs': [
+                    {
+                        'targets': 0,
+                        'checkboxes': {
+                            'selectRow': true
+                        }
+                    }
+                ],
+                'select': {
+                    'style': 'multi'
+                },
+                'order': [[1, 'asc']]
+            });
+
+            // This is the event handler for the check all checkbox
+            $("th input[type=checkbox]").on("click", function () {
+                var isChecked = this.checked;
+                var ld = $('#tbl-pagamentos').DataTable().rows().data();
+                $.each(ld, function (i, item) {
+                    item.isChecked = isChecked;
+                });
+                $(".cbcell input").prop("checked", isChecked);
+                table.data().sum();
+
+            });
+
+
+            // event handler for individual rows
+            $("#tbl-pagamentos").on("click", "td input[type=checkbox]", function () {
+
+                var isChecked = this.checked;
+
+                // set the data item associated with the row to match the checkbox
+                var dtRow = table.rows($(this).closest("tr"));
+                dtRow.data()[0].isChecked = isChecked;
+
+                // determine if the over all checkbox should be checked or unchecked
+                if (!isChecked) {
+                    // if one is unchecked, then checkall cannot be checked
+                    $("th input[type=checkbox]").prop("checked", false);
+                }
+                else {
+                    $("th input[type=checkbox]").prop("checked", true);
+                    $.each(table.data(), function (i, item) {
+                        if (!item.isChecked) {
+                            $("th input[type=checkbox]").prop("checked", false);
+                            return false;
+                        }
+                    });
+                }
+                table.data().sum();
+            });
+
+            $("#tbl-pagamentos").on("click", "tr", function () {
+
+                alert('click tr');
+
+                debugger;
+                var isChecked = false;
+
+                var data = table.row(this).data();
+                if (typeof data != 'undefined') {
+                    if ($(this).find('.dt-checkboxes').prop('checked')) {  //update the cell data with the checkbox state
+                        data.check = 1;
+                        isChecked = false;
+                    } else {
+                        data.check = 0;
+                        isChecked = true;
+                    }
+                }
+
+                //var isChecked = this.checked;
+
+                // set the data item associated with the row to match the checkbox
+                var dtRow = table.rows($(this).closest("tr"));
+                dtRow.data()[0].isChecked = isChecked;
+
+                // determine if the over all checkbox should be checked or unchecked
+                if (!isChecked) {
+                    // if one is unchecked, then checkall cannot be checked
+                    $("th input[type=checkbox]").prop("checked", false);
+                }
+                else {
+                    $("th input[type=checkbox]").prop("checked", true);
+                    $.each(table.data(), function (i, item) {
+                        if (!item.isChecked) {
+                            $("th input[type=checkbox]").prop("checked", false);
+                            return false;
+                        }
+                    });
+                }
+                table.data().sum();
+            });
+
+            // Handle form submission event
+            $('#form1').on('submit', function (e) {
+                var form = this;
+
+                //var rows_selected = table.column(0).checkboxes.selected();
+                var rowsel = table.column(0).checkboxes.selected();
+
+                $("#cphPrincipal_ids_pagamentos").val(rowsel.join(","));
+
+                //$.each(rowsel, function (index, rowId) {
+                //    $(form).append(
+                //        $('<input>').attr('type', 'hidden').attr('name', 'id[]').val(rowId)
+                //    )
+                //})
+
+                $("#view-rows").text(rowsel.join(","))
+                $("#view-form").text($(form).serialize())
+                // $('input[name="id\[\]"]', form).remove()
+                //e.preventDefault();
+            });
+        });
+    </script>
+
+
+</asp:Content>
+
