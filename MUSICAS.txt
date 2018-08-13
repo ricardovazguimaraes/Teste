@@ -1,0 +1,240 @@
+USE [IB2008]
+GO
+
+/****** Object:  Table [dbo].[TB_EXCECAO_PAGAMENTO]    Script Date: 13/08/2018 20:07:26 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+SET ANSI_PADDING ON
+GO
+
+CREATE TABLE [dbo].[TB_EXCECAO_PAGAMENTO](
+	[CD_EXCECAO_PAGAMENTO] [int] IDENTITY(1,1) NOT NULL,
+	[CD_TIPO_CLIENTE] [numeric](18, 0) NOT NULL,
+	[CD_PAGAMENTO] [int] NOT NULL,
+	[DT_PAGAMENTO] [datetime] NOT NULL,
+	[VL_PAGAMENTO] [money] NOT NULL,
+	[DC_CONTA_DEBITO] [varchar](15) NOT NULL,
+	[DC_TIPO_PAGAMENTO] [varchar](35) NOT NULL,
+	[DC_USUARIO_EXCECAO] [varchar](100) NOT NULL,
+	[DT_EXCECAO] [datetime] NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[CD_EXCECAO_PAGAMENTO] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+
+GO
+
+SET ANSI_PADDING OFF
+GO
+
+
+
+USE IB2008
+GO
+
+-- GMUD 10805
+
+/************************************************************************************************************************      
+* PROCEDURE: [SPR_INS_EXCECAO_PAGAMENTO]     
+* Objetivo: Procedure utilizada para gravar as exceções cadastradas
+* CRIADA POR: Talent Four      
+* Histórico:      
+* 03/04/2015 - TFCABC2 - Implementação inicial    
+
+SPR_INS_EXCECAO_PAGAMENTO_NOVO '62968,62969,62970,62971,62972,62973,62974,62975,62976,62977,62978,62979,62980,62981,62982,62983,62984,62985,62986,62987,62988,62989,62990,62991,62992,62993,62994,62995,62996,62997,62998,62999,63000,63001,63002,63003,63004,63005,63006,63007,63008,63009,63010,63011,63012,63013,63014,63015,63016,63017,63018,63019,63020,63021,63022,63023,63024,63025,63026,63027,63028,63029,63030,63031,63032,63033,63034,63035,63036,63037,63038,63039,63040,63041,63042,63043,63044,63045,63046,63047,63048,63049,63050,63051,63052,63053,63054,63055'
+							   ,'boleto'
+							   ,'RICARDOGU'
+							   ,'2018-08-13'
+
+  
+************************************************************************************************************************/      
+
+ALTER PROCEDURE dbo.SPR_INS_EXCECAO_PAGAMENTO_NOVO
+(
+	@CD_PAGAMENTOS			VARCHAR(MAX),
+	@DC_TIPO_PAGAMENTO		VARCHAR(35),
+	@DC_USUARIO_EXCECAO		VARCHAR(100),
+	@DT_EXCECAO				DATETIME 
+)
+AS
+
+BEGIN
+
+	--Declare @Ids varchar(max) = '62968,62969,62970,62971,62972,62973,62974,62975,62976,62977,62978,62979,62980,62981,62982,62983,62984,62985,62986,62987,62988,62989,62990,62991,62992,62993,62994,62995,62996,62997,62998,62999,63000,63001,63002,63003,63004,63005,63006,63007,63008,63009,63010,63011,63012,63013,63014,63015,63016,63017,63018,63019,63020,63021,63022,63023,63024,63025,63026,63027,63028,63029,63030,63031,63032,63033,63034,63035,63036,63037,63038,63039,63040,63041,63042,63043,63044,63045,63046,63047,63048,63049,63050,63051,63052,63053,63054,63055'
+	
+	DECLARE @XML XML = CAST('<i>' + REPLACE(@CD_PAGAMENTOS, ',', '</i><i>') + '</i>' AS XML)
+	
+	--SELECT cli.* 
+	--FROM
+	--	tb_pagamento_cliente cli
+	--	INNER JOIN @XML.nodes('i') x(i) 
+	--		ON  cli.CD_PAGAMENTO = x.i.value('.', 'VARCHAR(MAX)')
+	--order by cli.CD_PAGAMENTO
+
+
+	IF(@DC_TIPO_PAGAMENTO = 'BOLETO' OR @DC_TIPO_PAGAMENTO = 'TRICON')
+	BEGIN
+
+		INSERT INTO dbo.TB_EXCECAO_PAGAMENTO (CD_TIPO_CLIENTE,CD_PAGAMENTO, DT_PAGAMENTO, VL_PAGAMENTO, DC_CONTA_DEBITO, DC_TIPO_PAGAMENTO, DC_USUARIO_EXCECAO, DT_EXCECAO) 
+		SELECT 
+			CD_TIPO_CLIENTE,CD_PAGAMENTO, DT_PAGAMENTO, VL_PAGAMENTO, DC_CONTA_DEBITO, @DC_TIPO_PAGAMENTO 'DC_TIPO_PAGAMENTO', @DC_USUARIO_EXCECAO 'DC_USUARIO_EXCECAO', DATEADD(HH, 1, GETDATE()) 'DT_EXCECAO'
+		FROM
+		TB_PAGAMENTO_CLIENTE CLI
+		INNER JOIN @XML.nodes('i') x(i) ON  cli.CD_PAGAMENTO = x.i.value('.', 'VARCHAR(MAX)')
+
+	END
+
+
+	IF(@DC_TIPO_PAGAMENTO = 'TED')
+	BEGIN
+
+		INSERT INTO dbo.TB_EXCECAO_PAGAMENTO (CD_TIPO_CLIENTE,CD_PAGAMENTO, DT_PAGAMENTO, VL_PAGAMENTO, DC_CONTA_DEBITO, DC_TIPO_PAGAMENTO, DC_USUARIO_EXCECAO, DT_EXCECAO) 
+		SELECT 
+			CD_TIPO_CLIENTE,CD_PAGAMENTO, DT_PAGAMENTO, VL_PAGAMENTO, DC_CONTA_DEBITO, @DC_TIPO_PAGAMENTO 'DC_TIPO_PAGAMENTO', @DC_USUARIO_EXCECAO 'DC_USUARIO_EXCECAO', DATEADD(HH, 1, GETDATE()) 'DT_EXCECAO'
+		FROM
+		TB_PAGAMENTO_CLIENTE CLI
+		INNER JOIN @XML.nodes('i') x(i) ON  cli.CD_PAGAMENTO = x.i.value('.', 'VARCHAR(MAX)')
+
+	END
+
+	SELECT @@ROWCOUNT 'LINHA INSERIDAS'
+
+	--INSERT INTO dbo.TB_EXCECAO_PAGAMENTO (CD_TIPO_CLIENTE,CD_PAGAMENTO, DT_PAGAMENTO, VL_PAGAMENTO, DC_CONTA_DEBITO, DC_TIPO_PAGAMENTO, DC_USUARIO_EXCECAO, DT_EXCECAO) 
+	--VALUES (@CD_TIPO_CLIENTE,@CD_PAGAMENTO, @DT_PAGAMENTO, @VL_PAGAMENTO, @DC_CONTA_DEBITO, @DC_TIPO_PAGAMENTO, @DC_USUARIO_EXCECAO, @DT_EXCECAO)
+END
+
+-- DELETE FROM TB_EXCECAO_PAGAMENTO
+-- SELECT * FROM TB_EXCECAO_PAGAMENTO
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        public static void ManterPagamentoExcecaoBancaria(string tipoPagamento, string pagamentos, string usuarioExcecao)
+        {
+            SqlParameter[] param = new SqlParameter[8];
+
+            param[5] = new SqlParameter("@DC_TIPO_PAGAMENTO", SqlDbType.VarChar, 35);
+            param[5].Value = tipoPagamento;
+
+            param[6] = new SqlParameter("@DC_USUARIO_EXCECAO", SqlDbType.VarChar, 100);
+            param[6].Value = usuarioExcecao;
+
+            param[7] = new SqlParameter("@CD_PAGAMENTOS", SqlDbType.Date);
+            param[7].Value = pagamentos;
+
+            using (SqlConnection sqlCon = ABCBrasil.Data.DBConnect.OpenConnection(Constants.SYSTEM_DB))
+            {
+                SqlHelper.ExecuteNonQuery(sqlCon, CommandType.StoredProcedure, "dbo.SPR_INS_EXCECAO_PAGAMENTO", param);
+            }
+        }
+		
+		
+        protected void btnSalvar_Click(object sender, EventArgs e)
+        {
+            lblPagamentosLidos.Text = ids_pagamentos.Text;
+
+            try
+            {
+
+
+                //informações sobre o usuário logado
+                ABCBrasil.Security.Generic.Provider security = (ABCBrasil.Security.Generic.Provider)Session[Code.Constants.SESSION_SECURITY_PROVIDER];
+
+                var listaPagamentos = ids_pagamentos.Text.Split(',');
+
+
+                if (listaPagamentos.Count() < 1)
+                    throw new ArgumentNullException("Não há nenhum pagamento para consulta");
+
+                if (ID_TRANSACAO.Equals(TIPO_TRANSACAO.BOLETO.ToString()))
+                {
+                    ApoioIB.Code.Pagamento.ManterPagamentoExcecao(_pagamentoExcecao);
+                }
+
+                ApoioIB.Code.Pagamento.ManterPagamentoExcecao(_pagamentoExcecao);
+
+
+                bool Marcado = false;
+
+                foreach (string pag in listaPagamentos)
+                {
+                    //CheckBox check = (CheckBox)item.FindControl("chk");
+
+                    //Marcado = true;
+                    //PagamentoExcecao _pagamentoExcecao = new PagamentoExcecao();
+                    //_pagamentoExcecao.CodigoTipoCliente = Convert.ToInt32(this.hdnCD_TIPO_CLIENTE.Value);
+                    //_pagamentoExcecao.CodigoPagamento = Convert.ToInt32(pag.Cells[0].Text);
+                    //_pagamentoExcecao.DataPagamento = Convert.ToDateTime(pag.Cells[1].Text);
+                    //_pagamentoExcecao.ValorPagamento = Convert.ToDouble(pag.Cells[3].Text);
+                    //_pagamentoExcecao.ContaDebito = pag.Cells[2].Text;
+                    //_pagamentoExcecao.TipoPagamento = pag.Cells[5].Text;
+                    //_pagamentoExcecao.UsuarioExcecao = security.UserID;
+                    //_pagamentoExcecao.DataExcecao = DateTime.Now;
+
+                    ApoioIB.Code.Pagamento.ManterPagamentoExcecao(_pagamentoExcecao);
+
+                    //Executa a proc para liberar o pagamento
+                    ApoioIB.Code.Pagamento.LiberarPagamentoExcecao(_pagamentoExcecao);
+
+                    pagamentos = pagamentos + " Cod.Pagamento: " + _pagamentoExcecao.CodigoPagamento + " Valor Pagamento: " + _pagamentoExcecao.ValorPagamento;
+                }
+
+                if (Marcado)
+                {
+                    this.LblMensagem2.Text = "<font size=1 color=blue>Pagamento liberado com sucesso.<br/> </font>";
+                    //Envia email para o complice notificando sobre  a exceção
+                    string emailCompliance = ABCBrasil.Data.Parametros.BuscaValor("ApoioIBEmailCompliance");
+                    Email.EnviarEmailConfirmaExcecao(emailCompliance, pagamentos, this.txtNomeEmpresa.Text, Convert.ToString(security.UserID), Convert.ToString(DateTime.Now));
+
+                    // Grava Log Corporativo
+                    LogCorporativo.GravaLog(LogCorporativo.LogCorporativoEvento.EventoCadastroDeExcecao,
+                                            LogCorporativo.LogCorporativoCategoria.Inclusao,
+                                            "Aprovação por Exceção de Transação Bancária. - "
+                                            + "Usuário = " + security.UserID + "; "
+                                            + "Data = " + DateTime.Now + "; "
+                                            + "Sistema = ApoioIB; ");
+                }
+                //carrega o grid novamente
+                DataTable pagamento;
+
+                PagamentoExcecao _pagamentosExcecao = new PagamentoExcecao();
+                _pagamentosExcecao.CodigoTipoCliente = Convert.ToInt32(this.hdnCD_TIPO_CLIENTE.Value);
+                pagamento = ApoioIB.Code.Pagamento.ListarPagamento(_pagamentosExcecao, false);
+
+                if (pagamento == null || pagamento.Rows.Count == 0)
+                {
+                    this.lblMensagem.Visible = true;
+                    this.lblMensagem.Text = "Nenhum registro encontrado!";
+                    this.gvDados.Visible = false;
+                    return;
+                }
+
+                this.gvDados.Visible = true;
+                this.gvDados.DataSource = pagamento;
+                this.gvDados.DataBind();
+
+
+
+            }
+            catch (Exception ex)
+            {
+                this.lblMensagem.Text = "<font size=1 color=red>Ocorreram erros ao confirmar os pagamentos. <br/>" + ex.Message + "</font>";
+            }
+        }		
